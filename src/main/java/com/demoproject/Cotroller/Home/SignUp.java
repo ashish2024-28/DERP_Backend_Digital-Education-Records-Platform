@@ -61,7 +61,7 @@ public class SignUp {
     
 
     // ========= CREATE Sub Admin Account ========= 
-    @PostMapping("/create_SubAdmin")
+    @PostMapping("/create_subAdmin")
     public ResponseEntity<?> CreateSubAdmin(@PathVariable String domain, @RequestBody SubAdminSignupDTO subAdminDTO) {
         try {
         String save = subAdminService.addSubAdmin(domain, subAdminDTO);

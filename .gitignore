@@ -38,6 +38,8 @@ target/
 # hide application.properties
 src/main/resources/application.properties
 
+#hide .env
+.env
 
 # Maven Wrapper (Keep these files!)
 !.mvn/wrapper/maven-wrapper.jar

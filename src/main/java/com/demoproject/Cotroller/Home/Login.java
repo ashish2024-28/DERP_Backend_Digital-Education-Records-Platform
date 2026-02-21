@@ -56,9 +56,6 @@ public class Login {
 
             loginRequest.setDomain(domain);
             LoginResponseDTO response = baseUserService.userLogin(loginRequest);
-System.out.println("lfjljfjflksdfjoewrijhdflhaskejfsdlkfjlfk");
-System.out.println(response.getToken());
-System.out.println(response.getRole());
 
             return ResponseEntity.ok(response);
 

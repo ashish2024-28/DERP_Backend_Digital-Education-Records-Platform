@@ -23,8 +23,6 @@ import com.demoproject.Service.UniversityService;
 
 
 @RestController
-// @CrossOrigin // user to react both connect frotend and backend
-// @CrossOrigin(origins = "http://localhost:300")
 @RequestMapping("/home_page")
 public class HomePage {
     

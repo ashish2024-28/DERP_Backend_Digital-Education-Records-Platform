@@ -41,48 +41,22 @@ public class Security {
 
         return httpSecurity
         .authorizeHttpRequests(auth -> auth
-                 // 🔓 PUBLIC (NO LOGIN)
-                .requestMatchers("/","/not/**","/home_page/**","/{domain}/login_profile/**",
-                                "/{domain}/signup/**","/uploads/**","/test/**").permitAll()
-                 // 🔐 ROLE BASED
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/{domain}/domainAdmin/**").hasAnyRole("ADMIN","DOMAIN_ADMIN")
-                .requestMatchers("/{domain}/subadmin/**").hasAnyRole("ADMIN","SUB_ADMIN")
-                .requestMatchers("/{domain}/faculty/**").hasAnyRole("ADMIN","FACULTY")
-                .requestMatchers("/{domain}/student/**").hasAnyRole("ADMIN","STUDENT")
-                .anyRequest().authenticated()
-                
+            .requestMatchers("/","/not/**","/home_page/**","/{domain}/login_profile/**",
+                            "/{domain}/signup/**","/uploads/**","/test/**").permitAll()
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .requestMatchers("/{domain}/domainAdmin/**").hasAnyRole("ADMIN","DOMAIN_ADMIN")
+            .requestMatchers("/{domain}/subadmin/**").hasAnyRole("ADMIN","SUB_ADMIN")
+            .requestMatchers("/{domain}/faculty/**").hasAnyRole("ADMIN","FACULTY")
+            .requestMatchers("/{domain}/student/**").hasAnyRole("ADMIN","STUDENT")
+            .anyRequest().authenticated()
         )
-        // .httpBasic(Customizer.withDefaults()) //pop aaye gaa, also  optional (Postman testing)
-        // .formLogin(Customizer.withDefaults()) // html form aaye gaa
-        // .formLogin(form -> form.disable()) // html form aaye gaa
-
-        // .formLogin(form -> form
-        //     .loginPage("/login")          // custom login page
-        //     .defaultSuccessUrl("/profile", true)
-        //     .permitAll()
-
-        // .logout(logout -> logout
-        //     .logoutSuccessUrl("/login?logout")
-        // );
-
-        // That means: 👉 Server forgets everything after request 👉 Every request must carry token
-        .csrf(csrf -> csrf.disable()) // not use this one becuse csrf provide security which no any one hit apis except get
+        .csrf(csrf -> csrf.disable())
         .sessionManagement(session ->
             session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         )
-        .cors(Customizer.withDefaults()) // ✅ Enable CORS inside Spring Security
-
-
-        // after returning token from JWTServer.java.
-        // If Again Same user login or go to any other APIs so 
-        // only send token not username&password so,start step: 1 pass jwtFilter so go to JwtFilter.java 
-
-        // JWT -> Validation start 2
+        .cors(Customizer.withDefaults())   // ✅ ENABLE THIS
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-
         .build();
-
     }
 
    
