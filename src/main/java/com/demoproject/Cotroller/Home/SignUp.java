@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
-import com.demoproject.DTO.University.UniversityName_LogoPathDTO;
+import com.demoproject.DTO.University.UniversityNameDomainLogoPathDTO;
 import com.demoproject.Service.FacultyService;
 import com.demoproject.Service.StudentService;
 import com.demoproject.Service.SubAdminService;
@@ -35,7 +35,7 @@ public class SignUp {
      @GetMapping
     public ResponseEntity<?> getUniversityNameLogoPath(@PathVariable String domain){
         try{
-            UniversityName_LogoPathDTO dto = universityService.getUniversityName_Logo(domain);
+            UniversityNameDomainLogoPathDTO dto = universityService.getUniversityName_Logo(domain);
             return ResponseEntity.ok( dto );
 
         } catch (Exception e) {

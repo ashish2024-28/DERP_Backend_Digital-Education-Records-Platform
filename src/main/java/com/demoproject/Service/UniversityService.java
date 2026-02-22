@@ -1,26 +1,21 @@
 package com.demoproject.Service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.demoproject.Repository.DomainAdminRepository;
 import com.demoproject.Repository.UniversityRepo;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.demoproject.Entity.Role;
 import com.demoproject.Entity.University;
-import com.demoproject.DTO.University.UniversityName_LogoPathDTO;
+import com.demoproject.DTO.University.UniversityNameDomainLogoPathDTO;
 import com.demoproject.Entity.DomainAdmin;
 
 import jakarta.transaction.Transactional;
@@ -37,7 +32,16 @@ public class UniversityService {
     @Autowired
     @Qualifier("bcryptEncoder")
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ModelMapper modelMapper;
 
+
+    public List<UniversityNameDomainLogoPathDTO> getAllUniversityNameDomainLogo(){
+        List<University> universities = universityRepo.findAll();
+        return universities.stream()
+                .map(university -> modelMapper.map(university, UniversityNameDomainLogoPathDTO.class))
+                .collect(Collectors.toList());
+    }
     
     @Transactional
     public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin){
@@ -156,7 +160,7 @@ public class UniversityService {
 
 
 
-    public UniversityName_LogoPathDTO getUniversityName_Logo(String domain) throws Exception {
+    public UniversityNameDomainLogoPathDTO getUniversityName_Logo(String domain) throws Exception {
 
         University university = universityRepo.findByDomain(domain).orElseThrow(() -> new Exception("Invalid domain"));
 
@@ -164,9 +168,7 @@ public class UniversityService {
         String name = Optional.ofNullable(university.getUniversityName())
                 .filter(n -> !n.isBlank())
                 .orElse(university.getInstitutionName());
-
-
-        return new UniversityName_LogoPathDTO(name, university.getUniversityLogoPath());
+        return new UniversityNameDomainLogoPathDTO(name, university.getDomain(),university.getUniversityLogoPath());
 
 
         

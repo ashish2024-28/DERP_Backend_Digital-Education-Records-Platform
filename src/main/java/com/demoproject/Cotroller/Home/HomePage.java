@@ -1,23 +1,19 @@
 package com.demoproject.Cotroller.Home;
 
+import java.util.List;
 import java.util.Map;
 
+import com.demoproject.DTO.University.UniversityNameDomainLogoPathDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.demoproject.DTO.University.UniversityDomainAdminDTO;
-import com.demoproject.Entity.DomainAdmin;
-import com.demoproject.Entity.University;
 import com.demoproject.Service.UniversityService;
 
 
@@ -31,8 +27,9 @@ public class HomePage {
 
 
     @GetMapping
-    public String greet(){
-        return "welcome to my digitalEducationRecord Platform \nAdd Universitiy and DomanAdmin ";
+    public List<UniversityNameDomainLogoPathDTO> greet(){
+
+        return universityService.getAllUniversityNameDomainLogo() ;
     }
 
     // CREATE

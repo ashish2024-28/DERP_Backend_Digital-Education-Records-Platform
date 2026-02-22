@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UniversityName_LogoPathDTO {
+public class UniversityNameDomainLogoPathDTO {
 
     private String universityName;
+    private String domain;
     private String universityLogoPath;
 }
