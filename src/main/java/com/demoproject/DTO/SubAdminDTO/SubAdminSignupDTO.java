@@ -1,14 +1,10 @@
 package com.demoproject.DTO.SubAdminDTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
+@Data
 public class SubAdminSignupDTO {
     private String name;
     private String mobileNumber;

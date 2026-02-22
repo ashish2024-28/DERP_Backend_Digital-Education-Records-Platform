@@ -16,7 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.demoproject.Repository.DomainAdminRepository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -60,20 +60,19 @@ public class DomainAdminService {
         University university = universityService.getByDomain(domain);
         
         // set lastLoginDateTime
-        LocalDateTime lastLogin = dAdminLogin.getLastLoginDateTime();
-        System.out.println("LastDateTime  ds,fnsd, : " + lastLogin);
+        Instant lastLogin = dAdminLogin.getLastLoginDateTime();
 
-        dAdminLogin.setLastLoginDateTime(LocalDateTime.now());
+        dAdminLogin.setLastLoginDateTime(Instant.now());
         dAdminLogin = dAdminRepo.save(dAdminLogin);
-        
-        System.out.println("LastDateTime jo save ds,fnsd, : " + dAdminLogin.getLastLoginDateTime());
-        
+
+        dAdminLogin.setLastLoginDateTime(lastLogin);
+
+
         DomainAdminResponseDTO responseDTO = modelMapper.map(dAdminLogin, DomainAdminResponseDTO.class) ;
         responseDTO.setUniversityId(university.getId());
         responseDTO.setLastLoginDateTime(lastLogin);
 
         lastLogin = responseDTO.getLastLoginDateTime();
-        System.out.println("LastDateTime  get ,fnsd, : " + lastLogin);
 
         String univName = university.getUniversityName();
         if(univName.isBlank() || univName == null){

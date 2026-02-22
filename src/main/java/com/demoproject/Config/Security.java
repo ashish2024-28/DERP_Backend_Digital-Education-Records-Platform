@@ -41,7 +41,7 @@ public class Security {
 
         return httpSecurity
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/","/not/**","/home_page/**","/{domain}/login_profile/**",
+            .requestMatchers("/","/home_page/**","/{domain}/login_profile/**",
                             "/{domain}/signup/**","/uploads/**","/test/**").permitAll()
             .requestMatchers("/admin/**").hasRole("ADMIN")
             .requestMatchers("/{domain}/domainAdmin/**").hasAnyRole("ADMIN","DOMAIN_ADMIN")

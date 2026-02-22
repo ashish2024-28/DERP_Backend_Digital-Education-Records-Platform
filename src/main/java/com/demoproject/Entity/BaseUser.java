@@ -1,8 +1,7 @@
 package com.demoproject.Entity;
 
 
-import java.time.LocalDateTime;
-import org.hibernate.annotations.CreationTimestamp;
+import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -36,9 +35,8 @@ public abstract class BaseUser {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @CreationTimestamp
-    private LocalDateTime createdDateTime;
-    private LocalDateTime lastLoginDateTime; // For login purposes
+    private Instant createdDateTime = Instant.now();
+    private Instant lastLoginDateTime; // For login purposes
 
     
 }

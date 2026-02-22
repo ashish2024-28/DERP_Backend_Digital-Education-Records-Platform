@@ -1,15 +1,14 @@
 package com.demoproject.Security;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -21,18 +20,9 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JWTService {
     
+    @Value("${jwt.secret.key}")
+    private String SECRET ;
     
-    private String  secretKey = "";
-    
-    public JWTService (){
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-            SecretKey sk = keyGen.generateKey();
-            secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
-
-        } catch (NoSuchAlgorithmException e) {  throw new RuntimeException(e);      }
-    }
-
     
     // process of jwt verify user using userLogin method (4.) call getKey method then 
     
@@ -67,7 +57,8 @@ public class JWTService {
     private SecretKey getKey() {
         // byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         // return Keys.hmacShaKeyFor(keyBytes);
-        return Keys.hmacShaKeyFor(secretKey.getBytes());
+        // return Keys.hmacShaKeyFor(SECRET.getBytes());
+        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
     
     public String extractUserName(String token) {

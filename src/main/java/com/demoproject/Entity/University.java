@@ -1,10 +1,8 @@
 package com.demoproject.Entity;
 
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
-
-import org.hibernate.annotations.CreationTimestamp;
 
 
 import jakarta.persistence.CascadeType;
@@ -72,8 +70,8 @@ public class University {
     @Column(nullable = false)
     private String mobileNumber;
 
-    @CreationTimestamp
-    private LocalDateTime createdDateTime ; // date and time when create account
+
+    private Instant createdDateTime  = Instant.now(); // date and time when create account
 
     // for this use configration extend WebMvcConfigurer
     // @Column(nullable = false)

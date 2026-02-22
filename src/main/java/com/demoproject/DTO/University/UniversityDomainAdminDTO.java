@@ -1,16 +1,18 @@
 package com.demoproject.DTO.University;
 
 
-import org.springframework.web.multipart.MultipartFile;
 
-import com.demoproject.DTO.DomainAdminDTO.DomainAdminResponseDTO;
 import com.demoproject.Entity.DomainAdmin;
 import com.demoproject.Entity.University;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 // lombok auto create getter, setter ,constructor,..etc 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class UniversityDomainAdminDTO {
 
     private University university;

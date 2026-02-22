@@ -1,6 +1,7 @@
 package com.demoproject.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,11 +64,14 @@ public class FacultyService {
         Faculty facultyLogin = frepo.findByEmailAndDomain(email,domain).orElseThrow();
 
         // set lastLoginDateTime
-        LocalDateTime lastLogin = facultyLogin.getLastLoginDateTime();
-        facultyLogin.setLastLoginDateTime(LocalDateTime.now());
+        Instant lastLogin = facultyLogin.getLastLoginDateTime();
+
+        facultyLogin.setLastLoginDateTime(Instant.now());
         facultyLogin =  frepo.save(facultyLogin);
         
+        facultyLogin.setLastLoginDateTime(lastLogin);
         FacultyResponseDTO responseDTO = modelMapper.map(facultyLogin, FacultyResponseDTO.class) ;
+        
         responseDTO.setLastLoginDateTime(lastLogin);
         return responseDTO;
     }

@@ -1,6 +1,7 @@
 package com.demoproject.Service;
 
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,7 @@ public class SubAdminService {
         boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword() ,subAdminLogin.getPassword());
 
         if (passwordMatch) {
-            subAdminLogin.setLastLoginDateTime(LocalDateTime.now());
+            subAdminLogin.setLastLoginDateTime(Instant.now());
             return SArepo.save(subAdminLogin);
             
         } else {     return null;    }
@@ -68,10 +69,12 @@ public class SubAdminService {
         SubAdmin subAdminLogin = SArepo.findByEmailAndDomain(email,domain).orElseThrow();
 
         // set lastLoginDateTime
-        LocalDateTime lastLogin = subAdminLogin.getLastLoginDateTime();
+        Instant lastLogin = subAdminLogin.getLastLoginDateTime();
 
-        subAdminLogin.setLastLoginDateTime(LocalDateTime.now());
+        subAdminLogin.setLastLoginDateTime(Instant.now());
         subAdminLogin =  SArepo.save(subAdminLogin);
+
+        subAdminLogin.setLastLoginDateTime(lastLogin);
         
         SubAdminResponseDTO responseDTO =  modelMapper.map(subAdminLogin, SubAdminResponseDTO.class) ;
         responseDTO.setLastLoginDateTime(lastLogin);

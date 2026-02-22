@@ -2,13 +2,13 @@ package com.demoproject.Entity;
 
 
 
-import java.util.List;
-
-import com.demoproject.Entity.ProfileInformation.Common.Notepad;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name="domain_admin",
@@ -16,7 +16,10 @@ uniqueConstraints = {
     @UniqueConstraint(columnNames = "email"),
     @UniqueConstraint(columnNames = "mobilenumber")
 })
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class DomainAdmin extends BaseUser {
 
     // @Column(nullable = false)

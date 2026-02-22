@@ -1,15 +1,10 @@
 package com.demoproject.DTO.FacultyDTO;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-import lombok.AllArgsConstructor;
+import lombok.*;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class FacultyResponseDTO {
@@ -19,8 +14,8 @@ public class FacultyResponseDTO {
     private String password;
     private String mobileNumber;
 
-    private LocalDateTime createdDateTime;
-    private LocalDateTime lastLoginDateTime;
+    private Instant createdDateTime;
+    private Instant lastLoginDateTime;
     // Fields specific to Faculty
     private String facultyId;
     private String course;

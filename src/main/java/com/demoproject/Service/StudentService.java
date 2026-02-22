@@ -1,6 +1,7 @@
 package com.demoproject.Service;
 
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,11 +55,13 @@ public class StudentService {
         Student studentLogin = repo.findByEmailAndDomain(email,domain).orElseThrow();
 
         // set lastLoginDateTime
-        LocalDateTime lastLogin = studentLogin.getLastLoginDateTime();
+       Instant lastLogin = studentLogin.getLastLoginDateTime();
 
-        studentLogin.setLastLoginDateTime(LocalDateTime.now());
+        studentLogin.setLastLoginDateTime(Instant.now());
         studentLogin =  repo.save(studentLogin);
         
+        studentLogin.setLastLoginDateTime(lastLogin);
+
         StudentResponseDTO responseDTO = modelMapper.map(studentLogin, StudentResponseDTO.class) ;
         responseDTO.setLastLoginDateTime(lastLogin);
         return responseDTO;
@@ -69,7 +72,7 @@ public class StudentService {
         boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword(),studentLogin.getPassword());
 
         if (passwordMatch) {
-            studentLogin.setLastLoginDateTime(LocalDateTime.now());
+            studentLogin.setLastLoginDateTime(Instant.now());
             studentLogin =  repo.save(studentLogin);
             return modelMapper.map(studentLogin, StudentResponseDTO.class);
             

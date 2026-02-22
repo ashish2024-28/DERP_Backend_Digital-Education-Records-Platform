@@ -1,15 +1,11 @@
 package com.demoproject.DTO.StudentDTO;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class StudentResponseDTO {
@@ -24,8 +20,8 @@ public class StudentResponseDTO {
     private String course;
     private String branch;
     private String batch;
-    private LocalDateTime createdDateTime;
-    private LocalDateTime lastLoginDateTime; // For login purposes
+    private Instant createdDateTime;
+    private Instant lastLoginDateTime; // For login purposes
     private String profilePhotoPath; // store image path OR base64
 
 

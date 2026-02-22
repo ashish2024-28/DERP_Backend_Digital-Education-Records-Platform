@@ -47,7 +47,11 @@ public class JwtFilter extends OncePerRequestFilter  {
             if(authHeader != null && authHeader.startsWith("Bearer ")){
                 token = authHeader.substring(7);
                 // call method
-                username = jwtService.extractUserName(token); 
+                try {
+                    username = jwtService.extractUserName(token); 
+                } catch (Exception e) {
+                    System.out.println("Invalid JWT Token");
+                }
             }
 
             // step: 2.3 check the username not null and User is not already authenticated .

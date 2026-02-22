@@ -3,7 +3,6 @@ package com.demoproject.Entity;
 
 import java.util.List;
 
-import com.demoproject.Entity.ProfileInformation.Common.Notepad;
 import com.demoproject.Entity.ProfileInformation.StudentInfo.Certifications;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -16,13 +15,20 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "students", 
 uniqueConstraints = @UniqueConstraint(columnNames = "email")
 )
-@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class Student extends BaseUser {
 
     //unique domain wise

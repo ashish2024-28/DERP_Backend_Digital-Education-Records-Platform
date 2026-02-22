@@ -1,24 +1,26 @@
 package com.demoproject.Entity;
 
-import java.util.List;
 
-import com.demoproject.Entity.ProfileInformation.Common.Notepad;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "sub_admin",
 uniqueConstraints = @UniqueConstraint(columnNames = "email"))
-@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class SubAdmin extends BaseUser {
     
     // @Column(nullable = false)
