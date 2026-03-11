@@ -15,6 +15,7 @@ import com.demoproject.Repository.DomainAdminRepository;
 import com.demoproject.Repository.FacultyRepository;
 import com.demoproject.Repository.StudentRepository;
 import com.demoproject.Repository.SubAdminRepository;
+import com.demoproject.Repository.UniversityRepo;
 import com.demoproject.Security.JWTService;
 
 @Service
@@ -63,6 +64,8 @@ public class BaseUserService {
     private SubAdminRepository subAdminRepo;
     @Autowired
     private DomainAdminRepository domainAdminRepo;
+    @Autowired
+    private UniversityRepo universityRepo;
 
 
     // process of jwt verify user using userLogin method (3.) go to generateToken method call     -> JWTService
@@ -118,6 +121,27 @@ public class BaseUserService {
         // return new LoginResponseDTO(token, user.getRole());
     }
 
+//    check any email exist in any other role
+    public boolean existsUserByEmail(String email) {
+
+        boolean userExist =
+                studentRepo.existsByEmail(email);
+
+        if (!userExist)
+            userExist = facultyRepo.existsByEmail(email);
+
+        if (!userExist)
+            userExist = subAdminRepo.existsByEmail(email);
+
+        if (!userExist)
+            userExist = domainAdminRepo.existsByEmail(email);
+        
+        if (!userExist)
+            userExist = universityRepo.existsByEmail(email);
+
+        return userExist;
+
+    }
 
 }
 

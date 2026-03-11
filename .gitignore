@@ -40,6 +40,8 @@ src/main/resources/application.properties
 
 #hide .env
 .env
+.env.example
+
 
 # Maven Wrapper (Keep these files!)
 !.mvn/wrapper/maven-wrapper.jar

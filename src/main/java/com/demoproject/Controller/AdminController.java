@@ -1,4 +1,4 @@
-package com.demoproject.Cotroller;
+package com.demoproject.Controller;
     
 import java.util.List;
 

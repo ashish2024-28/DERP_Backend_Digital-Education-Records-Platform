@@ -1,4 +1,4 @@
-package com.demoproject.Cotroller.ProfileInformation.StudentInfo;
+package com.demoproject.Controller.ProfileInformation.StudentInfo;
 
 import java.io.IOException;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.demoproject.Cotroller.Home;
+package com.demoproject.Controller.Home;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.demoproject.DTO.ApiResponse;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
@@ -50,38 +51,26 @@ public class SignUp {
     // ========= CREATE Student Account ========= 
     @PostMapping("/create_student")
     public ResponseEntity<?> createStudent(@PathVariable String domain, @RequestBody StudentSignupDTO studentDto) {
-        try {
-            String save = studentService.addStudent(domain, studentDto);
-            return new ResponseEntity<>(save,HttpStatus.CREATED);
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
+        String saveMessage = studentService.addStudent(domain, studentDto);
+        return new ResponseEntity<>(new ApiResponse<>(true,saveMessage,null),HttpStatus.CREATED);
     }
     
 
     // ========= CREATE Sub Admin Account ========= 
     @PostMapping("/create_subAdmin")
     public ResponseEntity<?> CreateSubAdmin(@PathVariable String domain, @RequestBody SubAdminSignupDTO subAdminDTO) {
-        try {
-        String save = subAdminService.addSubAdmin(domain, subAdminDTO);
-        return new ResponseEntity<>(save,HttpStatus.CREATED);
-        
-    } catch (Exception e) {
-           return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }    
+
+        String saveMessage = subAdminService.addSubAdmin(domain, subAdminDTO);
+        return new ResponseEntity<>(new ApiResponse<>(true,saveMessage,null),HttpStatus.CREATED);
     }
     
     // ========= CREATE Faculty Account ========= 
     @PostMapping("/create_faculty")
     public ResponseEntity<?> createFaculty(@PathVariable String domain, @RequestBody FacultySignupDTO facultySignupDTO) {
-        try {
-            String save = facultyService.addFaculty(domain, facultySignupDTO);
-            return new ResponseEntity<>(save,HttpStatus.CREATED);
-            
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);    
-        }
+
+        String saveMessage = facultyService.addFaculty(domain, facultySignupDTO);
+        return new ResponseEntity<>(new ApiResponse<>(true,saveMessage,null),HttpStatus.CREATED);
     }
     
    

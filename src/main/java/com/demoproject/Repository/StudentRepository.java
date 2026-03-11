@@ -50,13 +50,16 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     boolean existsByEmail(String gmail);
     boolean existsByRollNumberAndDomain(String rollNumber, String domain);
     boolean existsByDomainAndEmail(String domain, String gmail);
-    
+
     
     // count 
     long countByUniversity(University university);
     long countByUniversity_Domain(String domain);
 
 
+
+//    faculty service call
+List<Student> findByCourseAndDomain(String course, String domain);
 
 
 

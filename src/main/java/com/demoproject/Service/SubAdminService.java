@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.demoproject.Repository.StudentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,7 +29,8 @@ import com.demoproject.Repository.UniversityRepo;
 @Service
 public class SubAdminService {
 
-
+    @Autowired
+    private StudentRepository studentRepository;
     @Autowired
     private StudentService studentService;
     @Autowired
@@ -37,6 +39,8 @@ public class SubAdminService {
     private SubAdminRepository SArepo;
     @Autowired
     private UniversityRepo universityRepo;
+    @Autowired
+    private BaseUserService baseUserService;
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
@@ -86,7 +90,11 @@ public class SubAdminService {
 
     // CREATE
     public String addSubAdmin(String domain, SubAdminSignupDTO signupDTO){
-       
+
+        if(baseUserService.existsUserByEmail(signupDTO.getEmail())){
+            throw new RuntimeException("User already exists with this email.");
+        }
+
         SubAdmin requestSubAdmin = modelMapper.map(signupDTO, SubAdmin.class);
 
         University university = universityRepo.findByDomain(domain)
@@ -94,9 +102,9 @@ public class SubAdminService {
         requestSubAdmin.setDomain(domain);
         requestSubAdmin.setUniversity(university);
        
-        if( SArepo.existsBySubAdminIdAndDomain(requestSubAdmin.getSubAdminId(),requestSubAdmin.getDomain())){ return "Sub Admin's Id field are already exist. ";  }
-        if( SArepo.existsByDomainAndEmail(requestSubAdmin.getDomain(),requestSubAdmin.getEmail())){ return "Sub Admin's field are already exist. ";  }
-        if( SArepo.existsByEmail(requestSubAdmin.getEmail())){ return "Enter Unique Email Id or Another Email Id . ";  }
+        if( SArepo.existsBySubAdminIdAndDomain(requestSubAdmin.getSubAdminId(),requestSubAdmin.getDomain())){ throw new RuntimeException("Sub Admin ID already exists.");  }
+        if( SArepo.existsByDomainAndEmail(requestSubAdmin.getDomain(),requestSubAdmin.getEmail())){ throw new RuntimeException("Sub Admin's field Email are already exist for this university. ");  }
+        if( SArepo.existsByEmail(requestSubAdmin.getEmail())){ throw new RuntimeException("Enter Unique Email Id. ");  }
 
         // for security use passwordEncoder
         requestSubAdmin.setPassword(passwordEncoder.encode(requestSubAdmin.getPassword()));
@@ -115,6 +123,7 @@ public class SubAdminService {
     // ------ READ ALL domain for specific university ------
     public List<SubAdminResponseDTO> getAllSubAdmin(String domain){
         List<SubAdmin> subAdminList = SArepo.findByDomain(domain);
+        System.out.println(subAdminList);
 
         return subAdminList.stream()
             .map(subAdmin -> modelMapper.map(subAdmin, SubAdminResponseDTO.class))
@@ -198,10 +207,18 @@ public class SubAdminService {
 
 
     // ------ READ ALL faculty for specific university ------
-    public List<FacultyResponseDTO> getFacultyAll(String domain) {
-        return facultyService.getAll(domain);
+    public List<StudentResponseDTO> getStudentsByFacultyCourse(String domain, String email) {
+
+        SubAdmin subAdmin = SArepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+
+        String course = subAdmin.getCourse();
+
+        return studentRepository.findByCourseAndDomain(course, domain)
+                .stream()
+                .map(student -> modelMapper.map(student, StudentResponseDTO.class))
+                .toList();
     }
-    
     //  READ ONE by domain + DomainId(Did) means (Id which provide by University or collage)
     public Faculty getFacultyByFacultyId(String domain, String facultyId ) {
         return facultyService.getFacultyByFacultyId(domain, facultyId);

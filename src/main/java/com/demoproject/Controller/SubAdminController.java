@@ -1,12 +1,14 @@
-package com.demoproject.Cotroller;
+package com.demoproject.Controller;
 
 
 import java.util.List;
 
+import com.demoproject.DTO.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -111,10 +113,7 @@ public class SubAdminController {
 
 
 // ------ READ ALL faculty for specific university ------
-    @GetMapping("/all_faculty")
-    public List<FacultyResponseDTO> getAllFaculty(@PathVariable String domain) {
-        return sAService.getFacultyAll(domain);
-    }
+
    
     //  READ ONE by domain + SubAdminId means (Id which provide by University or collage)
     @GetMapping("/faculty_by_facultyId")
@@ -128,10 +127,18 @@ public class SubAdminController {
 
     // ------ READ ALL student for specific university ------
     @GetMapping("/all_student")
-    public List<StudentResponseDTO> getAllStudents(@PathVariable String domain) {
-        return sAService.getAllStudents(domain);
+    public ResponseEntity<?> getAllStudents(
+            @PathVariable String domain,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, null,
+                        sAService.getStudentsByFacultyCourse(domain, email))
+        );
     }
-    
+
     // get or READ ONE by domain + rollNo
     @GetMapping("/student_by_rollno")
     public Student getStudentByRollNo(@PathVariable String domain, @RequestParam String rollNo) {
@@ -161,7 +168,7 @@ public class SubAdminController {
     public List<Student> getAllStudentByBatch(@PathVariable String domain, @RequestParam String batch) {
         return sAService.getStudentByBatch(domain, batch);
     }
-   
+
 
 
 

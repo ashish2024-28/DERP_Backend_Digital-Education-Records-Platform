@@ -30,6 +30,8 @@ public class UniversityService {
     @Autowired
     private DomainAdminRepository dAdminRepo;
     @Autowired
+    private BaseUserService baseUserService;
+    @Autowired
     @Qualifier("bcryptEncoder")
     private PasswordEncoder passwordEncoder;
     @Autowired
@@ -46,48 +48,45 @@ public class UniversityService {
     @Transactional
     public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin){
     // public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin , MultipartFile logoFile){
-        try {
-        // University validations
-            if (universityRepo.existsByDomain(university.getDomain())) {
-                throw new RuntimeException("University domain already exists. Enter unique domain.");
-            }
+    // University validations
+        if (universityRepo.existsByDomain(university.getDomain())) {
+            throw new RuntimeException("University domain already exists. Enter unique domain.");
+        }
 
-            if (universityRepo.existsByPermanentId(university.getPermanentId())) {
-                throw new RuntimeException("Permanent ID already exists. Enter correct Permanent ID.");
-            }
+        if (universityRepo.existsByPermanentId(university.getPermanentId())) {
+            throw new RuntimeException("Permanent ID already exists. Enter correct Permanent ID.");
+        }
 
-            if (universityRepo.existsByEmail(university.getEmail())) {
-                throw new RuntimeException("University email already exists.");
-            }
+        if (universityRepo.existsByEmail(university.getEmail())) {
+            throw new RuntimeException("University email already exists.");
+        }
 
-            if (universityRepo.existsByMobileNumber(university.getMobileNumber())) {
-                throw new RuntimeException("University mobile number already exists.");
-            }
+        if (universityRepo.existsByMobileNumber(university.getMobileNumber())) {
+            throw new RuntimeException("University mobile number already exists.");
+        }
 
-            // DomainAdmin validations
-            if (dAdminRepo.existsByMobileNumber(domainAdmin.getMobileNumber())) {
-                throw new RuntimeException("Domain Admin mobile number already exists.");
-            }
+        // DomainAdmin validations
+        boolean emailExist = baseUserService.existsUserByEmail(domainAdmin.getEmail());
+        if(emailExist){
+            throw new RuntimeException("Domain Admin email already exists.");
+        }
 
-            if (dAdminRepo.existsByEmail(domainAdmin.getEmail())) {
-                throw new RuntimeException("Domain Admin email already exists.");
-            }
+        if (dAdminRepo.existsByMobileNumber(domainAdmin.getMobileNumber())) {
+            throw new RuntimeException("Domain Admin mobile number already exists.");
+        }
 
-            // Encode password
-            domainAdmin.setPassword(passwordEncoder.encode(domainAdmin.getPassword()));
+        // Encode password
+        domainAdmin.setPassword(passwordEncoder.encode(domainAdmin.getPassword()));
+    
+        // set relationship (BOTH SIDES)
+        domainAdmin.setUniversity(university);
+        domainAdmin.setRole(Role.DOMAIN_ADMIN);
+        domainAdmin.setDomain(university.getDomain());
+        university.setDomainAdmin(domainAdmin);
+
+        University saved = universityRepo.save(university);
         
-            // set relationship (BOTH SIDES)
-            domainAdmin.setUniversity(university);
-            domainAdmin.setRole(Role.DOMAIN_ADMIN);
-            domainAdmin.setDomain(university.getDomain());
-            university.setDomainAdmin(domainAdmin);
-
-            University saved = universityRepo.save(university);
-            
-            return "University created with ID: " + saved.getId() + "\ndomain : " + saved.getDomain() + "\nDomainAdmin ID: " + saved.getDomainAdmin().getId();
-            
-        } 
-        catch (Exception e) {  return e.getMessage();  }
+        return "University created with ID: " + saved.getId() + "\ndomain : " + saved.getDomain() + "\nDomainAdmin ID: " + saved.getDomainAdmin().getId();
     }
 
             

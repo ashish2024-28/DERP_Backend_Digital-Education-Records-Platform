@@ -1,4 +1,4 @@
-package com.demoproject.Cotroller.ProfileInformation.SubAdminInfo;
+package com.demoproject.Controller.ProfileInformation.SubAdminInfo;
 // package com.demoproject.Entity.ProfileInformation.SubAdminInfo;
 
 // import jakarta.persistence.Entity;

@@ -11,15 +11,9 @@ import com.demoproject.Entity.ProfileInformation.Common.Notepad;
 @Repository
 public interface NotepadRepository extends JpaRepository<Notepad, Long>{
 
-    // List<Note> findByStudentId(Long id);
+    List<Notepad> findByOwnerEmailId(String ownerEmailId);
 
-    // List<Note> findByFacultyId(Long id);
-
-    // List<Note> findBySubAdminId(Long id);
-
-    // List<Note> findByDomainAdminId(Long id);
-
-    List<Notepad> findByOwnerIdAndOwnerRole(Long ownerId, Role ownerRole);
+    void deleteByOwnerEmailIdAndId(String ownerEmailId, Long id);
 
 
 }

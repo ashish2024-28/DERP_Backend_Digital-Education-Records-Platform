@@ -29,7 +29,9 @@ public interface DomainAdminRepository extends JpaRepository<DomainAdmin, Long>{
     Optional<DomainAdmin> findByEmailAndDomain(String email, String domain);
 
 
+    boolean existsByEmailAndDomain(String gmail, String domain);
 
 
-    
+
+
 } 

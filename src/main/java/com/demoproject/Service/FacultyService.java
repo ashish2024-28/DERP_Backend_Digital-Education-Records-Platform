@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.demoproject.Repository.StudentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,11 +30,15 @@ public class FacultyService {
 
 
     @Autowired
+    private StudentRepository studentRepository;
+    @Autowired
     private StudentService studentService;
     @Autowired
     private FacultyRepository frepo;
     @Autowired
     private UniversityRepo universityRepo;
+    @Autowired
+    private BaseUserService baseUserService;
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
@@ -80,16 +85,21 @@ public class FacultyService {
     // ---- CREATE ------
     public String addFaculty(String domain, FacultySignupDTO facultySignupDTO) {
         
-        Faculty requesFaculty =modelMapper.map(facultySignupDTO, Faculty.class);
+        Faculty requesFaculty = modelMapper.map(facultySignupDTO, Faculty.class);
+
+        boolean emailExist = baseUserService.existsUserByEmail(facultySignupDTO.getEmail());
+        if(emailExist){
+            throw new RuntimeException("User Exist Please Try Another Email Id.");
+        }
 
         University university = universityRepo.findByDomain(domain)
         .orElseThrow(() -> new RuntimeException("Invalid domain"));
         requesFaculty.setDomain(domain);
         requesFaculty.setUniversity(university);
 
-        if( frepo.existsByFacultyIdAndDomain(requesFaculty.getFacultyId(),requesFaculty.getDomain()) ){    return "Faculty's Id field are already exist. ";  }
-        if( frepo.existsByDomainAndEmail(requesFaculty.getDomain(),requesFaculty.getEmail()) ){    return "Faculty's Email field are already exist. ";  }
-        if( frepo.existsByEmail(requesFaculty.getEmail())){ return "Enter Unique Email Id or Another Email Id . ";  }
+        if( frepo.existsByFacultyIdAndDomain(requesFaculty.getFacultyId(),requesFaculty.getDomain()) ){    throw new RuntimeException("Faculty's Id field are already exist. ");  }
+        if( frepo.existsByDomainAndEmail(requesFaculty.getDomain(),requesFaculty.getEmail()) ){    throw new RuntimeException("Faculty's Email field are already exist. ");  }
+        if( frepo.existsByEmail(requesFaculty.getEmail())){ throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");  }
        
         // for security use passwordEncoder
         requesFaculty.setPassword(passwordEncoder.encode(requesFaculty.getPassword()));
@@ -107,7 +117,7 @@ public class FacultyService {
 
 
     // ------ READ ALL faculty for specific university ------
-    public List<FacultyResponseDTO> getAll(String domain) {
+    public List<FacultyResponseDTO> getAllFaculty(String domain) {
         List<Faculty> facultyList = frepo.findByDomain(domain);
         
         return facultyList.stream()
@@ -157,9 +167,9 @@ public class FacultyService {
         return frepo.save(old);
     }
 
-    // ------ UPDATE by Did (Domain id) ------
-    public Boolean updateFacultyByFacultyId(String domain, Faculty f) {
-        Faculty old = frepo.findByFacultyIdAndDomain(f.getFacultyId(), domain);
+    // ------ UPDATE by  ------
+    public Boolean updateFacultyByFacultyEmail(String domain, Faculty f) {
+        Faculty old = frepo.findByEmailAndDomain(f.getEmail(), domain).orElse(null);
         if (old == null) return false;
         
         old.setName(f.getName());
@@ -193,18 +203,28 @@ public class FacultyService {
 
     
     // ------ READ ALL student for specific university ------
-    public List<StudentResponseDTO> getAllStudents(String domain) {
-        return studentService.getAllStudent(domain);
+
+    public List<StudentResponseDTO> getStudentsByFacultyCourse(String domain, String email) {
+
+        Faculty faculty = frepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+
+        String course = faculty.getCourse();
+
+        return studentRepository.findByCourseAndDomain(course, domain)
+                .stream()
+                .map(student -> modelMapper.map(student, StudentResponseDTO.class))
+                .toList();
     }
 
     // ------ READ ONE by domain + rollNo ------
     public Student getStudentByRollNo(String domain, String rollNo) {
-        return studentService.getStudentByRollNo(domain, rollNo);        
+        return studentService.getStudentByRollNo(domain, rollNo);
     }
-    
+
     // ------ READ ONE by domain + Name ------
     public List<Student> getAllStudentByName(String domain, String name) {
-        return studentService.getAllStudentByName(domain, name);        
+        return studentService.getAllStudentByName(domain, name);
     }
 
     // ------ READ All by domain + Branch ------
@@ -216,7 +236,7 @@ public class FacultyService {
     public List<Student> getStudentByCourse(String domain,String course) {
         return studentService.getAllStudentByCourse(domain,course);
     }
-    
+
     // ------ READ All by domain + Batch ------
     public List<Student> getStudentByBatch(String domain, String batch) {
         return studentService.getAllStudentByBatch(domain, batch);

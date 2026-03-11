@@ -26,8 +26,10 @@ public class Notepad {
 
     private String attachmentPath;
 
+
     // 🔥 Generic Owner
-    private Long ownerId; // ID of Student/Faculty/SubAdmin/DomainAdmin
+    private String ownerEmailId; // ID of Student/Faculty/SubAdmin/DomainAdmin
+
 
     @Enumerated(EnumType.STRING)
     private Role ownerRole; // STUDENT / FACULTY / SUB_ADMIN / DOMAIN_ADMIN

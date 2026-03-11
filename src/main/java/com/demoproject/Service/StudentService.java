@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NonNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,8 +28,10 @@ public class StudentService {
     @Autowired
     private StudentRepository repo;
     @Autowired
+    private BaseUserService baseUserService;
+    @Autowired
     private UniversityRepo universityRepo;
-    
+
     @Autowired
     @Qualifier("bcryptEncoder")
     private PasswordEncoder passwordEncoder;
@@ -81,9 +84,13 @@ public class StudentService {
     
 
     // ---- CREATE ------
-    public String addStudent(String domain, StudentSignupDTO signupStrudent) {
-        
-        Student save = modelMapper.map(signupStrudent, Student.class);
+    public String  addStudent(String domain, @NonNull StudentSignupDTO signupStudent) {
+
+        if(baseUserService.existsUserByEmail(signupStudent.getEmail())){
+            throw new RuntimeException("User already exists with this email.");
+        }
+
+        Student save = modelMapper.map(signupStudent, Student.class);
 
         University university = universityRepo.findByDomain(domain)
         .orElseThrow(() -> new RuntimeException("Invalid domain"));
@@ -91,9 +98,9 @@ public class StudentService {
         save.setUniversity(university);
 
 
-        if( repo.existsByRollNumberAndDomain(save.getRollNumber(),save.getDomain()) ){    return "Student's RollNumber field are already exist. ";    }
-        if( repo.existsByDomainAndEmail(save.getDomain(),save.getEmail()) ){    return "Student's Email field are already exist. ";    }
-        if( repo.existsByEmail(save.getEmail())){ return "Enter Unique Email Id or Another Email Id . ";  }
+        if( repo.existsByRollNumberAndDomain(save.getRollNumber(),save.getDomain()) ){    throw new RuntimeException("Student's RollNumber field are already exist. ");    }
+        if( repo.existsByDomainAndEmail(save.getDomain(),save.getEmail()) ){    throw new RuntimeException("Student's Email field are already exist. ");    }
+        if( repo.existsByEmail(save.getEmail())){  throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");  }
         
         // for security use passwordEncoder
         save.setPassword(passwordEncoder.encode(save.getPassword()));

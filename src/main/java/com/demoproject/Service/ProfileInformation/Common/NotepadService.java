@@ -19,15 +19,15 @@ import com.demoproject.Service.BaseUserService;
 @RequiredArgsConstructor
 public class NotepadService {
 
-    private  NotepadRepository noteRepository;
-    private  BaseUserService baseUserService;
-    private  Authentication authentication;
+    private final NotepadRepository noteRepository;
+    private final BaseUserService baseUserService;
 
     private final String UPLOAD_DIR = "uploads/notes/";
 
+
     public Notepad addNote(String role, String domain, String email, String title, String noteText, MultipartFile file) throws IOException {
 
-        BaseUser user = baseUserService.findUserByDomainAndEmail(email, domain);
+        BaseUser user = baseUserService.findUserByDomainAndEmail(domain, email);
 
         Files.createDirectories(Paths.get(UPLOAD_DIR));
 
@@ -37,7 +37,7 @@ public class NotepadService {
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
             Path filePath = Paths.get(UPLOAD_DIR, fileName);
             Files.write(filePath, file.getBytes());
-            filePathString = filePath.toString();
+            filePathString = "uploads/notes/" + fileName;
         }
 
         Notepad note = new Notepad();
@@ -45,52 +45,30 @@ public class NotepadService {
         note.setNoteText(noteText);
         note.setAttachmentPath(filePathString);
 
-        note.setOwnerId(user.getId());
+        note.setOwnerEmailId(user.getEmail());
         note.setOwnerRole(user.getRole());
-
         return noteRepository.save(note);
     }
 
 
+    public List<Notepad> getMyNotes(String role, String domain, String email ) {
+        BaseUser user = baseUserService.findUserByDomainAndEmail(domain, email);
 
-    public List<Notepad> getMyNotes(String role, String domain, String email) {
+        return noteRepository.findByOwnerEmailId( user.getEmail() );
+    }
 
-    BaseUser user = baseUserService.findUserByDomainAndEmail(domain, email);
+    public void deleteNote(String email, Long id) {
 
-    if (!authentication.getAuthorities()
-        .stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_" + role.toUpperCase()))) {
-        throw new RuntimeException("Access Denied");
+        Notepad note = noteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+
+        if (!note.getOwnerEmailId().equals(email)) {
+            throw new RuntimeException("You are not allowed to delete this note");
+        }
+
+        noteRepository.delete(note);
     }
 
 
-    return noteRepository.findByOwnerIdAndOwnerRole(
-            user.getId(),
-            user.getRole()
-    );
-}
 
-
-       
-
-    // public List<Note> getStudentNotes(String email) {
-    //     Student student = studentRepository.findByEmail(email)
-    //             .orElseThrow(() -> new RuntimeException("Student not found"));
-
-    //     return noteRepository.findByStudentId(student.getId());
-    // }
-
-    // public List<Note> getStudentNotes(String email) {
-    //     Student student = studentRepository.findByEmail(email)
-    //             .orElseThrow(() -> new RuntimeException("Student not found"));
-
-    //     return noteRepository.findByStudentId(student.getId());
-    // }
-
-    // public List<Note> getStudentNotes(String email) {
-    //     Student student = studentRepository.findByEmail(email)
-    //             .orElseThrow(() -> new RuntimeException("Student not found"));
-
-    //     return noteRepository.findByStudentId(student.getId());
-    // }
 }

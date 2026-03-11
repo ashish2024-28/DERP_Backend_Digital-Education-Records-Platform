@@ -67,12 +67,9 @@ public class DomainAdminService {
 
         dAdminLogin.setLastLoginDateTime(lastLogin);
 
-
         DomainAdminResponseDTO responseDTO = modelMapper.map(dAdminLogin, DomainAdminResponseDTO.class) ;
         responseDTO.setUniversityId(university.getId());
         responseDTO.setLastLoginDateTime(lastLogin);
-
-        lastLogin = responseDTO.getLastLoginDateTime();
 
         String univName = university.getUniversityName();
         if(univName.isBlank() || univName == null){
@@ -136,7 +133,6 @@ public class DomainAdminService {
     // ------ READ ALL student for specific university ------
     public List<StudentResponseDTO> getAllStudents(String domain) {
         return studentService.getAllStudent(domain);
-       
     }
 
     // ------ READ ONE by domain + rollNo ------
@@ -190,7 +186,7 @@ public class DomainAdminService {
 
     // ------ READ ALL faculty for specific university ------
     public List<FacultyResponseDTO> getAllFaculty(String domain) {
-        return facultyService.getAll(domain);
+        return facultyService.getAllFaculty(domain);
     }
     
     public Faculty getFacultyByFacultyId(String domain, String facultyId ) {
@@ -204,7 +200,7 @@ public class DomainAdminService {
 
     // ------ UPDATE by FacultyId means (Id which provide by University or collage) ------
     public Boolean updateFacultyByFacultyId(String domain, Faculty f) {
-       return facultyService.updateFacultyByFacultyId(domain, f);
+       return facultyService.updateFacultyByFacultyEmail(domain, f);
     }
     
     // ------ DELETE by FacultyId ------
