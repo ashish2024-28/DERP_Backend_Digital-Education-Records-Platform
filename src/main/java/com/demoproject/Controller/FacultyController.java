@@ -1,6 +1,7 @@
 package com.demoproject.Controller;
 
 
+import java.io.IOException;
 import java.util.List;
 
 import com.demoproject.DTO.ApiResponse;
@@ -18,6 +19,7 @@ import com.demoproject.Entity.Faculty;
 import com.demoproject.Entity.Student;
 import com.demoproject.Service.FacultyService;
 import com.demoproject.Service.UniversityService;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -93,7 +95,28 @@ public class FacultyController {
         }
     }
 
-        // ------ UPDATE by facultyid  ------
+    //    updata profile picture
+    @PutMapping("/update_profile_pic")
+    public ResponseEntity<?> updateProfilePic(
+            @PathVariable String domain,
+            @RequestParam MultipartFile profilePic
+    ) throws IOException {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        String path = fService.updateProfilePic(domain,email,profilePic);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Profile updated successfully", path)
+        );
+
+    }
+
+
+    // ------ UPDATE by facultyid  ------
     @PutMapping("/update_faculty")
     public ResponseEntity<?> updateFacultyByDid(@PathVariable String domain, @RequestBody Faculty faculty) {
         try {

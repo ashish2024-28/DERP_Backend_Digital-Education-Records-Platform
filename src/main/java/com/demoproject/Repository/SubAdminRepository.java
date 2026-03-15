@@ -25,6 +25,7 @@ public interface SubAdminRepository extends JpaRepository<SubAdmin, Long> {
     SubAdmin findBySubAdminIdAndDomain(String subAdminId, String domain);
 
     Optional<SubAdmin> findByEmailAndDomain(String email, String domain);
+    SubAdmin findByDomainAndEmail(String domain, String email);
 
     SubAdmin findByEmailAndPassword(String email, String password);
 
@@ -40,9 +41,6 @@ public interface SubAdminRepository extends JpaRepository<SubAdmin, Long> {
     // count 
     long countByUniversity(University university);
     long countByUniversity_Domain(String domain);
-
-
-
 
 
 }

@@ -28,7 +28,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     
     // find By  Gmail  + domain
     Optional<Student> findByEmailAndDomain(String email, String domain);
-    
+    Student findByDomainAndEmail(String domain, String email);
+
     // find By  Gmail  + Password
     Student findByEmailAndPassword(String email, String domain);
 
@@ -60,7 +61,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
 //    faculty service call
 List<Student> findByCourseAndDomain(String course, String domain);
-
 
 
 }

@@ -24,8 +24,9 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     
     //  find one by domain + DomainId(Did) means (Id which provide by University or collage)
     Faculty findByFacultyIdAndDomain(String facultyId, String domain);
-    
+
     //  find one by domain + Email
+    Faculty findByDomainAndEmail(String domain, String email);
     Optional<Faculty> findByEmailAndDomain(String email, String domain);
     
     //  Login by domain + Email + Password
@@ -48,8 +49,4 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     long countByUniversity_Domain(String domain);
 
 
-
-
-
-    
 }

@@ -1,6 +1,7 @@
 package com.demoproject.Controller;
 
 
+import java.io.IOException;
 import java.util.List;
 
 import com.demoproject.DTO.ApiResponse;
@@ -28,6 +29,7 @@ import com.demoproject.Entity.Student;
 import com.demoproject.Entity.SubAdmin;
 import com.demoproject.Service.SubAdminService;
 import com.demoproject.Service.UniversityService;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -83,6 +85,27 @@ public class SubAdminController {
     } catch (Exception e) {
            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
        }    
+    }
+
+
+    //    updata profile picture
+    @PutMapping("/update_profile_pic")
+    public ResponseEntity<?> updateProfilePic(
+            @PathVariable String domain,
+            @RequestParam MultipartFile profilePic
+    ) throws IOException {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        String path = sAService.updateProfilePic(domain,email,profilePic);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Profile updated successfully", path)
+        );
+
     }
 
     // Update Password or Forget Password

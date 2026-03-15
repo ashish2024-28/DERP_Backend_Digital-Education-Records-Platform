@@ -1,5 +1,6 @@
 package com.demoproject.Controller;
 
+import com.demoproject.DTO.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.demoproject.Entity.Student;
 import com.demoproject.Service.StudentService;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/{domain}/student")
@@ -57,6 +61,26 @@ public class StudenController {
         );
     }
 
+
+    //    updata profile picture
+    @PutMapping("/update_profile_pic")
+    public ResponseEntity<?> updateProfilePic(
+            @PathVariable String domain,
+            @RequestParam MultipartFile profilePic
+    ) throws IOException {
+
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        String path = studentService.updateProfilePic(domain,email,profilePic);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Profile updated successfully", path)
+        );
+
+    }
 
     // // CREATE
     // @PostMapping("/add")

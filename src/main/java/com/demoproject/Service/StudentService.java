@@ -1,10 +1,15 @@
 package com.demoproject.Service;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.demoproject.Entity.DomainAdmin;
 import org.jspecify.annotations.NonNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,7 @@ import com.demoproject.Entity.Student;
 import com.demoproject.Entity.University;
 import com.demoproject.Repository.StudentRepository;
 import com.demoproject.Repository.UniversityRepo;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class StudentService {
@@ -81,7 +87,29 @@ public class StudentService {
             
         } else {    return null;    }
     }
-    
+
+
+    //    updata profile picture
+    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+
+        Student student = repo.findByDomainAndEmail(domain,email);
+
+        String uploadDir = "uploads/profile/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        student.setProfilePic(uploadDir+fileName);
+
+        repo.save(student);
+
+        return uploadDir+fileName;
+    }
+
 
     // ---- CREATE ------
     public String  addStudent(String domain, @NonNull StudentSignupDTO signupStudent) {
@@ -193,19 +221,35 @@ public class StudentService {
 
 
     // ------ UPDATE  by Email ------
-    public Boolean updateStudentByEmail(String domain, Student s) {
-        Student old = repo.findByEmailAndDomain(s.getEmail(), domain).orElse(null);
+    public Boolean updateStudentByEmail(String domain, Student newData) {
+
+        Student old = repo.findByEmailAndDomain(newData.getEmail(), domain).orElse(null);
+
         if (old == null) return false;
 
-        old.setName(s.getName());
-        old.setBranch(s.getBranch());
-        old.setCourse(s.getCourse());
-        old.setBatch(s.getBatch());
-        old.setMobileNumber(s.getMobileNumber());
-        old.setFatherName(s.getFatherName());
-        old.setFatherMobNo(s.getFatherMobNo());
+        if (newData.getName() != null)
+            old.setName(newData.getName());
+
+        if (newData.getBranch() != null)
+            old.setBranch(newData.getBranch());
+
+        if (newData.getCourse() != null)
+            old.setCourse(newData.getCourse());
+
+        if (newData.getBatch() != null)
+            old.setBatch(newData.getBatch());
+
+        if (newData.getMobileNumber() != null)
+            old.setMobileNumber(newData.getMobileNumber());
+
+        if (newData.getFatherName() != null)
+            old.setFatherName(newData.getFatherName());
+
+        if (newData.getFatherMobNo() != null)
+            old.setFatherMobNo(newData.getFatherMobNo());
 
         repo.save(old);
+
         return true;
     }
 
@@ -221,7 +265,7 @@ public class StudentService {
 
     // ------ DELETE By RollNo ------
     public String deleteStudentByEmail(String domain, String email) {
-        Student s = repo.findByRollNumberAndDomain(email, domain);
+        Student s = repo.findByEmailAndDomain(email, domain).orElse(null);
         if (s == null) return "Invalid student";
         String rollno = s.getRollNumber();
         repo.delete(s);

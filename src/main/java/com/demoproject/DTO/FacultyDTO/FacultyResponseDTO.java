@@ -20,5 +20,6 @@ public class FacultyResponseDTO {
     private String facultyId;
     private String course;
     private String teachingBatch;
-    private String profilePhotoPath;
+    private String profilePic;
+
 }

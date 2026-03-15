@@ -20,7 +20,9 @@ public class DomainAdminResponseDTO {
 
     private Instant createdDateTime;
     private Instant lastLoginDateTime;
-    
+    private String profilePic;
+
+
     // University details (Flattened or nested)
     private String universityName;
     private Long universityId;

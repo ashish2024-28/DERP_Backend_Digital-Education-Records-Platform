@@ -38,6 +38,8 @@ public abstract class BaseUser {
     private Instant createdDateTime = Instant.now();
     private Instant lastLoginDateTime; // For login purposes
 
+    private String profilePic;
+
     
 }
 

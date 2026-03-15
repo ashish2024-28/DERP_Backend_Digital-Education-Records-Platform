@@ -19,6 +19,6 @@ public class SubAdminResponseDTO {
     private String course;
     private Instant createdDateTime;
     private Instant lastLoginDateTime; // For login purposes
-    private String profilePhotoPath; // store image path OR base64
+ private String profilePic;// store image path OR base64
 
 }

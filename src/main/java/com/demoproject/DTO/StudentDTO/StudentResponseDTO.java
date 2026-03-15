@@ -22,7 +22,7 @@ public class StudentResponseDTO {
     private String batch;
     private Instant createdDateTime;
     private Instant lastLoginDateTime; // For login purposes
-    private String profilePhotoPath; // store image path OR base64
+    private String profilePic;// store image path OR base64
 
 
 }

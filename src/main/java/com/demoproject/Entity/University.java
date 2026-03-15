@@ -17,6 +17,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(
@@ -30,6 +32,8 @@ import lombok.Data;
 )
 
 @Data
+@Getter
+@Setter
 public class University {
     
     @Id

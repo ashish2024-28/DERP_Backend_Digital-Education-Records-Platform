@@ -15,7 +15,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.demoproject.Repository.DomainAdminRepository;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -78,6 +83,27 @@ public class DomainAdminService {
         responseDTO.setUniversityName(univName);
         return responseDTO;
 
+    }
+
+//    updata profile picture
+    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+
+        DomainAdmin domainAdmin = dAdminRepo.findByDomainAndEmail(domain,email);
+
+        String uploadDir = "uploads/profile/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        domainAdmin.setProfilePic(uploadDir+fileName);
+
+        dAdminRepo.save(domainAdmin);
+
+        return uploadDir+fileName;
     }
 
     // Update Password or Forget Password

@@ -1,10 +1,15 @@
 package com.demoproject.Service;
 
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.demoproject.Entity.*;
 import com.demoproject.Repository.StudentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,18 +17,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.demoproject.Entity.Role;
-import com.demoproject.Entity.University;
 import com.demoproject.DTO.LoginRequestDTO;
 import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
 import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
-import com.demoproject.Entity.Faculty;
-import com.demoproject.Entity.Student;
-import com.demoproject.Entity.SubAdmin;
 import com.demoproject.Repository.SubAdminRepository;
 import com.demoproject.Repository.UniversityRepo;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
@@ -46,12 +47,6 @@ public class SubAdminService {
     @Autowired
     @Qualifier("bcryptEncoder")
     private PasswordEncoder passwordEncoder ;
-
-    
-
-    // public SubAdminService(SubAdminRepository repo){
-    //     this.SArepo = repo;
-    // }
 
     
 
@@ -86,6 +81,27 @@ public class SubAdminService {
         return responseDTO;
     }
 
+
+    //    updata profile picture
+    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+
+        SubAdmin subAdmin = SArepo.findByDomainAndEmail(domain,email);
+
+        String uploadDir = "uploads/profile/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        subAdmin.setProfilePic(uploadDir+fileName);
+
+        SArepo.save(subAdmin);
+
+        return uploadDir+fileName;
+    }
 
 
     // CREATE
@@ -123,7 +139,6 @@ public class SubAdminService {
     // ------ READ ALL domain for specific university ------
     public List<SubAdminResponseDTO> getAllSubAdmin(String domain){
         List<SubAdmin> subAdminList = SArepo.findByDomain(domain);
-        System.out.println(subAdminList);
 
         return subAdminList.stream()
             .map(subAdmin -> modelMapper.map(subAdmin, SubAdminResponseDTO.class))

@@ -37,7 +37,7 @@ public class JWTService {
                 .header()
                     .add("typ", "JWT")
                     .add("alg", "HS256")
-                    .add("app", "demo-project")   // custom header (optional)
+                    .add("app", "derp-project")   // custom header (optional)
                 .and()
 
                 // 🔹 PAYLOAD
@@ -45,7 +45,7 @@ public class JWTService {
                     .add(claims)
                     .subject(email)
                     .issuedAt(new Date(System.currentTimeMillis()))
-                    .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30)) // 30 min
+                    .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 60 min
                 .and()
 
                 // 🔹 SIGNATURE

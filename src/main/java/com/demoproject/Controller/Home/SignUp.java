@@ -33,18 +33,18 @@ public class SignUp {
     @Autowired
     private UniversityService universityService;
 
-     @GetMapping
-    public ResponseEntity<?> getUniversityNameLogoPath(@PathVariable String domain){
-        try{
-            UniversityNameDomainLogoPathDTO dto = universityService.getUniversityName_Logo(domain);
-            return ResponseEntity.ok( dto );
-
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
-        }
-    }
+//    @GetMapping
+//    public ResponseEntity<?> getUniversityNameLogoPath(@PathVariable String domain){
+//        try{
+//            UniversityNameDomainLogoPathDTO dto = universityService.getUniversityName_Logo(domain);
+//            return ResponseEntity.ok( dto );
+//
+//        } catch (Exception e) {
+//            return ResponseEntity
+//                    .status(HttpStatus.BAD_REQUEST)
+//                    .body(e.getMessage());
+//        }
+//    }
 
 
 

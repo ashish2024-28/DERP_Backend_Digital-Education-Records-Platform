@@ -2,10 +2,12 @@ package com.demoproject.Controller;
 
 
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.demoproject.DTO.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +34,7 @@ import com.demoproject.Entity.Student;
 import com.demoproject.Entity.SubAdmin;
 import com.demoproject.Service.DomainAdminService;
 import com.demoproject.Service.UniversityService;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/{domain}/domainAdmin")
@@ -49,14 +52,11 @@ public class DomainAdminController {
 
 
     @GetMapping
-    public ResponseEntity<?> getDomainAdmin(@PathVariable String domain) {
-        try{
+    public ResponseEntity<?> getDomainAdmin(@PathVariable String domain) throws Exception{
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            return ResponseEntity.ok(domainAdminService.getDomainAdminByEmailAndDomain(email, domain));
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true,"Success", domainAdminService.getDomainAdminByEmailAndDomain(email, domain)));
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
     }
 
     @GetMapping("get_dashboard")
@@ -71,7 +71,29 @@ public class DomainAdminController {
         response.put("faculty", totalfaculty);
         response.put("subAdmin", totalsubAdmin);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                new ApiResponse<>(true,"Dashboard Data",response)
+        );
+    }
+
+//    updata profile picture
+    @PutMapping("/update_profile_pic")
+    public ResponseEntity<?> updateProfilePic(
+            @PathVariable String domain,
+            @RequestParam MultipartFile profilePic
+    ) throws IOException {
+
+            String email = SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getName();
+
+            String path = domainAdminService.updateProfilePic(domain,email,profilePic);
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Profile updated successfully", path)
+            );
+
     }
 
      // Update Password or Forget Password
