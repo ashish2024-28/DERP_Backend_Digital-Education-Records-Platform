@@ -79,3 +79,5 @@ Thumbs.db
 *.temp
 *.swp
 
+#upload folder here store all image which add through frontend
+uploads/
