@@ -110,8 +110,11 @@ public class StudentService {
         return uploadDir+fileName;
     }
 
+    public boolean  emailVerifiy(String email) {
+        return baseUserService.existsUserByEmail(email);
+    }
 
-    // ---- CREATE ------
+        // ---- CREATE ------
     public String  addStudent(String domain, @NonNull StudentSignupDTO signupStudent) {
 
         if(baseUserService.existsUserByEmail(signupStudent.getEmail())){

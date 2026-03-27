@@ -157,7 +157,8 @@ public class DomainAdminService {
     }
 
     // ------ READ ALL student for specific university ------
-    public List<StudentResponseDTO> getAllStudents(String domain) {
+    public List<StudentResponseDTO>
+    getAllStudents(String domain) {
         return studentService.getAllStudent(domain);
     }
 

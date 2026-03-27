@@ -1,4 +1,4 @@
- package com.demoproject.Config;
+ package com.demoproject.Security;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,15 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.demoproject.Security.CustomUserDetailsService;
-import com.demoproject.Security.JwtFilter;
 
-
-
-
-
-
-@Configuration //use anotation for define configration class
+ @Configuration //use anotation for define configration class
 @EnableMethodSecurity // use anotation to tell springboot i add or handle the security
 // Enables security on methods using annotations like:- > @PreAuthorize ,@PostAuthorize ,@RolesAllowed ,@Secured
 

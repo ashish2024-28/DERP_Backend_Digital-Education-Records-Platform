@@ -31,6 +31,30 @@ public class HomePage {
         return universityService.getAllUniversityNameDomainLogo() ;
     }
 
+//
+    /**
+     * Step 1: Validate all fields BEFORE sending OTPs.
+     * Frontend calls this first. If any duplicate exists → error returned.
+     * If all clear → frontend proceeds to send OTPs.
+     */
+    @PostMapping("/validate_before_otp")
+    public ResponseEntity<ApiResponse<?>> validateBeforeOtp(
+            @RequestPart("university") University university,
+            @RequestPart("domainAdmin") DomainAdmin domainAdmin
+    ) {
+        try {
+            universityService.validateUniversityAndAdmin(university, domainAdmin);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Validation passed", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    /**
+     * Step 2: Final registration — called only after both OTPs are verified.
+     */
     @PostMapping("/register_university")
     public ResponseEntity<ApiResponse<?>> add(
 

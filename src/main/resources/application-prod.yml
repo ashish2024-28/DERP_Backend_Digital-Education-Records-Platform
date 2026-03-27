@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: crud_operation
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update   # ⚠️ risky in prod (better: validate)
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  thymeleaf:
+    cache: false
+    check-template-location: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_FOR_OTP}
+    password: ${PASSWORD_FOR_OTP}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: ${SERVER_PATH:/}
+
+frontend:
+  url: ${FRONTEND_URL}
+
+jwt:
+  secret:
+    key: ${JWT_SECRET_KEY}
+
+springdoc:
+  swagger-ui:
+    path: ${SWAGGER_URL:/swagger}

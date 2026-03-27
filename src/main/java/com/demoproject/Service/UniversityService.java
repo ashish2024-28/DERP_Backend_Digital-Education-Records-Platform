@@ -50,56 +50,61 @@ public class UniversityService {
                 .map(university -> modelMapper.map(university, UniversityNameDomainLogoPathDTO.class))
                 .collect(Collectors.toList());
     }
-    
-    @Transactional
-    public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin, MultipartFile logo) throws IOException {
 
-    // University validations
-        if (universityRepo.existsByDomain(university.getDomain())) {
-            throw new RuntimeException("University domain already exists. Enter unique domain.");
-        }
+//
+    /**
+     * Pure validation — no side effects, no DB writes.
+     * Called by /validate_before_otp BEFORE OTPs are sent.
+     * Throws RuntimeException with a user-friendly message if any duplicate is found.
+     */
+    public void validateUniversityAndAdmin(University university, DomainAdmin domainAdmin) {
 
+        // University checks
         if (universityRepo.existsByPermanentId(university.getPermanentId())) {
-            throw new RuntimeException("Permanent ID already exists. Enter correct Permanent ID.");
+            throw new RuntimeException("Permanent ID already exists. Enter the correct Permanent ID.");
         }
-
-        if (universityRepo.existsByEmail(university.getEmail())) {
+        if (universityRepo.existsByDomain(university.getDomain())) {
+            throw new RuntimeException("University domain already exists. Enter a unique domain.");
+        }
+        if (baseUserService.existsUserByEmail(university.getEmail())) {
             throw new RuntimeException("University email already exists.");
         }
-
         if (universityRepo.existsByMobileNumber(university.getMobileNumber())) {
             throw new RuntimeException("University mobile number already exists.");
         }
 
-        // DomainAdmin validations
-        boolean emailExist = baseUserService.existsUserByEmail(domainAdmin.getEmail());
-        if(emailExist){
+        // DomainAdmin checks
+        if (baseUserService.existsUserByEmail(domainAdmin.getEmail())) {
             throw new RuntimeException("Domain Admin email already exists.");
         }
-
         if (dAdminRepo.existsByMobileNumber(domainAdmin.getMobileNumber())) {
             throw new RuntimeException("Domain Admin mobile number already exists.");
         }
+    }
 
+    /**
+     * Called AFTER both OTPs are verified.
+     * Runs validation again (safety net) then persists everything.
+     */
+    @Transactional
+    public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin, MultipartFile logo) throws IOException {
+
+        // Re-run validation as a safety net (race-condition protection)
+        validateUniversityAndAdmin(university, domainAdmin);
 
         Files.createDirectories(Paths.get(UPLOAD_DIR));
-
-        String filePathString = null;
 
         if (logo != null && !logo.isEmpty()) {
             String fileName = System.currentTimeMillis() + "_" + logo.getOriginalFilename();
             Path filePath = Paths.get(UPLOAD_DIR, fileName);
             Files.write(filePath, logo.getBytes());
-            filePathString = "uploads/universityLogo/" + fileName;
-            // ⭐ IMPORTANT
-            university.setUniversityLogoPath(filePathString);
+            university.setUniversityLogoPath("uploads/universityLogo/" + fileName);
         }
-
 
         // Encode password
         domainAdmin.setPassword(passwordEncoder.encode(domainAdmin.getPassword()));
 
-        // set relationship (BOTH SIDES)
+        // Set relationships (both sides)
         domainAdmin.setUniversity(university);
         domainAdmin.setRole(Role.DOMAIN_ADMIN);
         domainAdmin.setDomain(university.getDomain());
@@ -107,8 +112,71 @@ public class UniversityService {
 
         University saved = universityRepo.save(university);
 
-        return "University created with ID: " + saved.getId() + "\ndomain : " + saved.getDomain() + "\nDomainAdmin ID: " + saved.getDomainAdmin().getId();
+        return "University created with ID: " + saved.getId()
+                + "\nDomain: " + saved.getDomain()
+                + "\nDomainAdmin ID: " + saved.getDomainAdmin().getId();
     }
+
+
+
+//    @Transactional
+//    public String registerUniversityWithDomainAdmin(University university, DomainAdmin domainAdmin, MultipartFile logo) throws IOException {
+//
+//    // University validations
+//        if (universityRepo.existsByDomain(university.getDomain())) {
+//            throw new RuntimeException("University domain already exists. Enter unique domain.");
+//        }
+//
+//        if (universityRepo.existsByPermanentId(university.getPermanentId())) {
+//            throw new RuntimeException("Permanent ID already exists. Enter correct Permanent ID.");
+//        }
+//
+//        if (universityRepo.existsByEmail(university.getEmail())) {
+//            throw new RuntimeException("University email already exists.");
+//        }
+//
+//        if (universityRepo.existsByMobileNumber(university.getMobileNumber())) {
+//            throw new RuntimeException("University mobile number already exists.");
+//        }
+//
+//        // DomainAdmin validations
+//        boolean emailExist = baseUserService.existsUserByEmail(domainAdmin.getEmail());
+//        if(emailExist){
+//            throw new RuntimeException("Domain Admin email already exists.");
+//        }
+//
+//        if (dAdminRepo.existsByMobileNumber(domainAdmin.getMobileNumber())) {
+//            throw new RuntimeException("Domain Admin mobile number already exists.");
+//        }
+//
+//
+//        Files.createDirectories(Paths.get(UPLOAD_DIR));
+//
+//        String filePathString = null;
+//
+//        if (logo != null && !logo.isEmpty()) {
+//            String fileName = System.currentTimeMillis() + "_" + logo.getOriginalFilename();
+//            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+//            Files.write(filePath, logo.getBytes());
+//            filePathString = "uploads/universityLogo/" + fileName;
+//            // ⭐ IMPORTANT
+//            university.setUniversityLogoPath(filePathString);
+//        }
+//
+//
+//        // Encode password
+//        domainAdmin.setPassword(passwordEncoder.encode(domainAdmin.getPassword()));
+//
+//        // set relationship (BOTH SIDES)
+//        domainAdmin.setUniversity(university);
+//        domainAdmin.setRole(Role.DOMAIN_ADMIN);
+//        domainAdmin.setDomain(university.getDomain());
+//        university.setDomainAdmin(domainAdmin);
+//
+//        University saved = universityRepo.save(university);
+//
+//        return "University created with ID: " + saved.getId() + "\ndomain : " + saved.getDomain() + "\nDomainAdmin ID: " + saved.getDomainAdmin().getId();
+//    }
 
 
     public UniversityNameDomainLogoPathDTO getUniversityName_Logo(String domain) throws Exception {

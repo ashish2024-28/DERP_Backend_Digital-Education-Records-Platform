@@ -3,12 +3,7 @@ package com.demoproject.Controller.Home;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.demoproject.DTO.ApiResponse;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
@@ -47,15 +42,23 @@ public class SignUp {
 //    }
 
 
+    @GetMapping("/check_email")
+    public ResponseEntity<?> emailVerifiy(@RequestParam String email) {
 
-    // ========= CREATE Student Account ========= 
+        boolean saveMessage = studentService.emailVerifiy(email);
+        return new ResponseEntity<>(new ApiResponse<>(saveMessage,null,null),HttpStatus.CREATED);
+    }
+
+
+
+    // ========= CREATE Student Account =========
     @PostMapping("/create_student")
     public ResponseEntity<?> createStudent(@PathVariable String domain, @RequestBody StudentSignupDTO studentDto) {
 
         String saveMessage = studentService.addStudent(domain, studentDto);
         return new ResponseEntity<>(new ApiResponse<>(true,saveMessage,null),HttpStatus.CREATED);
     }
-    
+
 
     // ========= CREATE Sub Admin Account ========= 
     @PostMapping("/create_subAdmin")
