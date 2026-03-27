@@ -196,6 +196,13 @@
 			<artifactId>spring-boot-starter-cache</artifactId>
 		</dependency>
 
+<!--👉 This is used to read Excel files (.xlsx)-->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>

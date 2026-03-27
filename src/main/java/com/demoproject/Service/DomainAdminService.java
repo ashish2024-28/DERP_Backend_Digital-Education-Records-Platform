@@ -9,6 +9,11 @@ import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
 import com.demoproject.Entity.*;
 
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,6 +23,7 @@ import com.demoproject.Repository.DomainAdminRepository;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,7 +52,7 @@ public class DomainAdminService {
     @Autowired
     private ModelMapper modelMapper;
 
-    
+
     //  Login by domain + Email + Password
     // public DomainAdmin LoginDomainAdmin(LoginRequestDTO loginRequestDTO){
     //     DomainAdmin dAdminLogin = dAdminRepo.findByDomainAndEmail(loginRequestDTO.getDomain(),loginRequestDTO.getEmail());
@@ -54,8 +60,8 @@ public class DomainAdminService {
 
     //     if (passwordMatch) {
     //         dAdminLogin.setLastLoginDateTime(LocalDateTime.now());
-    //         return dAdminRepo.save(dAdminLogin);   
-    //     } 
+    //         return dAdminRepo.save(dAdminLogin);
+    //     }
     //     else {    return null;  }
     // }
 
@@ -63,7 +69,7 @@ public class DomainAdminService {
     public DomainAdminResponseDTO getDomainAdminByEmailAndDomain(String email, String domain){
         DomainAdmin dAdminLogin = dAdminRepo.findByDomainAndEmail(domain, email);
         University university = universityService.getByDomain(domain);
-        
+
         // set lastLoginDateTime
         Instant lastLogin = dAdminLogin.getLastLoginDateTime();
 
@@ -117,7 +123,7 @@ public class DomainAdminService {
 
     }
 
-// count 
+// count
     public long getStudentCount(String domain) {
         return studentService.getStudentCount(domain);
     }
@@ -132,17 +138,17 @@ public class DomainAdminService {
 
 
 // These all are use by Main Admin
-    //  READ ONE by domain 
+    //  READ ONE by domain
     public DomainAdmin getDomainAdmin(String domain){
         return dAdminRepo.findByDomain(domain).orElse(null);
-        
+
     }
 
     // ------ READ ALL DomainAdmin  ------
     public List<DomainAdmin> getAllDomainAdmin() {
         return dAdminRepo.findAll();
     }
-    
+
     // ------ Delete DomainAdmin for specific university ------
     public String deleteDomainAdminByGmail(String domain, String gmail){
         String delete = dAdminRepo.deleteByDomainAndEmail(domain,gmail);
@@ -150,7 +156,7 @@ public class DomainAdminService {
     }
 
 // ********** STUDENT operations **********
-  
+
     // ---- Add Student ------
     public String addStudent(String domain, StudentSignupDTO s) {
         return studentService.addStudent(domain, s);
@@ -162,48 +168,18 @@ public class DomainAdminService {
         return studentService.getAllStudent(domain);
     }
 
-    // ------ READ ONE by domain + rollNo ------
-    public Student getStudentByRollNo(String domain, String rollNo) {
-        return studentService.getStudentByRollNo(domain, rollNo);        
-    }
-    
-    // ------ READ ONE by domain + Name ------
-    public List<Student> getAllStudentByName(String domain, String name) {
-        return studentService.getAllStudentByName(domain, name);        
-    }
-
-    // ------ READ ONE by domain + Gmail ------
-    public Student getStudentByEmail(String email, String domain) {
-        return studentService.getStudentByEmail(domain, email);        
-    }
-
-    // ------ READ All by domain + Branch ------
-    public List<Student> getAllStudentByBranch(String domain,String branch) {
-        return studentService.getAllStudentByBranch(domain,branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    public List<Student> getAllStudentByCourse(String domain,String course) {
-        return studentService.getAllStudentByCourse(domain,course);
-    }
-
-    // ------ READ All by domain + Batch ------
-    public List<Student> getStudentByBatch(String domain, String batch) {
-        return studentService.getAllStudentByBatch(domain, batch);
-    }
-
     // ------ UPDATE  by email  ------
     public Boolean updateStudentByEmail(String domain, Student s) {
         return studentService.updateStudentByEmail(domain,s);
     }
 
-    // ------ DELETE By email ------ 
+    // ------ DELETE By email ------
     public String deleteStudentByEmail(String domain, String email) {
         return studentService.deleteStudentByEmail(domain, email);
     }
 
 
-// ********** FACULTY operations ********** 
+// ********** FACULTY operations **********
 
 
     // ---- CREATE ------
@@ -215,29 +191,21 @@ public class DomainAdminService {
     public List<FacultyResponseDTO> getAllFaculty(String domain) {
         return facultyService.getAllFaculty(domain);
     }
-    
-    public Faculty getFacultyByFacultyId(String domain, String facultyId ) {
-        return facultyService.getFacultyByFacultyId(domain, facultyId);
-    }
-    
-    //  READ ONE by domain + gmail
-    public Faculty getFacultyByGmail(String domain, String gmail ) {
-        return facultyService.getFacultyByGmail(domain, gmail);
-    }
 
-    // ------ UPDATE by FacultyId means (Id which provide by University or collage) ------
-    public Boolean updateFacultyByFacultyId(String domain, Faculty f) {
+
+    // ------ UPDATE by email ------
+    public Boolean updateFacultyByEmail(String domain, Faculty f) {
        return facultyService.updateFacultyByFacultyEmail(domain, f);
     }
-    
-    // ------ DELETE by FacultyId ------
-    public String deleteFacultyByFacultyId(String domain, String facultyId) {
-       return facultyService.deleteFacultyByFacultyId(domain, facultyId);
+
+    // ------ DELETE by Email ------
+    public String deleteFacultyByEmail(String domain, String email) {
+       return facultyService.deleteFacultyByEmail(domain, email);
     }
 
 
-// **********  SUBADMIN operations ********** 
-   
+// **********  SUBADMIN operations **********
+
     // CREATE
     public String addSubAdmin(String domain, SubAdminSignupDTO SA){
         return subAdminService.addSubAdmin(domain, SA);
@@ -248,32 +216,245 @@ public class DomainAdminService {
         return subAdminService.getAllSubAdmin(domain);
     }
 
-    //  READ ONE by domain + DomainId means (Id which provide by University or collage)
-    public SubAdmin getSubAdminBySubAdminId(String domain, String subAdminId){
-        return subAdminService.getSubAdminBySubAdminId(domain, subAdminId);
+    // UPDATE by email
+    public SubAdmin updateSubAdminByEmail(String domain, SubAdmin newData){
+       return subAdminService.updateSubAdminByEmail(domain,  newData);
     }
 
-    // UPDATE
-    public SubAdmin updateSubAdminBySubAdminId(String domain, SubAdmin newData){
-       return subAdminService.updateSubAdminBySubAdminId(domain,  newData);
-    }
+    // DELETE by email
+    public String deleteSubAdminByEmail(String domain, String email){
+        return subAdminService.deleteSubAdminBySubAdminId(domain, email);
 
-    // DELETE
-    public String deleteSubAdminBySubAdminId(String domain, String subAdminId){
-        return subAdminService.deleteSubAdminBySubAdminId(domain, subAdminId);
-       
     }
 
 
+////read Excel files (.xlsx)
+//    public void uploadStudentsFromExcel(String domain, MultipartFile file) throws Exception {
+//
+//        InputStream is = file.getInputStream();
+//        Workbook workbook = new XSSFWorkbook(is);
+//        Sheet sheet = workbook.getSheetAt(0);
+//
+//        for (Row row : sheet) {
+//
+//            if (row.getRowNum() == 0) continue; // skip header
+//
+//            StudentSignupDTO student = new StudentSignupDTO();
+//
+//            student.setRollNumber(row.getCell(0).getStringCellValue());
+//            student.setName(row.getCell(1).getStringCellValue());
+//            student.setEmail(row.getCell(2).getStringCellValue());
+//            student.setMobileNumber(row.getCell(3).getStringCellValue());
+//            student.setCourse(row.getCell(4).getStringCellValue());
+//            student.setBranch(row.getCell(5).getStringCellValue());
+//            student.setBatch(row.getCell(6).getStringCellValue());
+//            student.setFatherName(row.getCell(7).getStringCellValue());
+//            student.setFatherMobNo(row.getCell(8).getStringCellValue());
+//            student.setPassword(row.getCell(9).getStringCellValue());
+//
+//            // Save using existing method
+//            addStudent(domain, student);
+//        }
+//
+//        workbook.close();
+//    }
+//
+////
+////    📊 5. Excel Format (VERY IMPORTANT) ->  Your Excel file should look like this:
+////
+////    Roll   Name	        Email	     Mobile	   	Course	Branch	  Batch	    Father Name	 Father Mobile  Password
+////    101   Ashish	ashish@gmail.com   9876543210	 BTech	  CSE	 2024-2028	  Ram	      9876543210    12345
+////
+////            👉 Column order MUST match code
+//
+//
+//    //read Excel files (.xlsx)
+//    public void uploadFacultyFromExcel(String domain, MultipartFile file) throws Exception {
+//
+//        InputStream is = file.getInputStream();
+//        Workbook workbook = new XSSFWorkbook(is);
+//        Sheet sheet = workbook.getSheetAt(0);
+//
+//        for (Row row : sheet) {
+//
+//            if (row.getRowNum() == 0) continue; // skip header
+//
+//            FacultySignupDTO faculty = new FacultySignupDTO();
+//
+//            faculty.setFacultyId(row.getCell(0).getStringCellValue());
+//            faculty.setName(row.getCell(1).getStringCellValue());
+//            faculty.setEmail(row.getCell(2).getStringCellValue());
+//            faculty.setMobileNumber(row.getCell(3).getStringCellValue());
+//            faculty.setCourse(row.getCell(4).getStringCellValue());
+//            faculty.setTeachingBatch(row.getCell(5).getStringCellValue());
+//            faculty.setPassword(row.getCell(6).getStringCellValue());
+//
+//            // Save using existing method
+//            addFaculty(domain, faculty);
+//        }
+//
+//        workbook.close();
+//    }
+//
+////
+////    📊 5. Excel Format (VERY IMPORTANT) ->  Your Excel file should look like this:
+////
+////   FacultyId   Name	        Email	         Mobile	   	 Course 	TeachingBatch	  Password
+////    101        Ashish	    ashish@gmail.com    9876543210	  BTech	     2A,2C,...	        12345
+////
+////            👉 Column order MUST match code
+//
+//
+//    //read Excel files (.xlsx)
+////    public void uploadSubAdminFromExcel(String domain, MultipartFile file) throws Exception {
+////
+////        InputStream is = file.getInputStream();
+////        Workbook workbook = new XSSFWorkbook(is);
+////        Sheet sheet = workbook.getSheetAt(0);
+////
+////        for (Row row : sheet) {
+////
+////            if (row.getRowNum() == 0) continue; // skip header
+////
+////            SubAdminSignupDTO subAdmin = new SubAdminSignupDTO();
+////
+////            subAdmin.setSubAdminId(row.getCell(0).getStringCellValue());
+////            subAdmin.setName(row.getCell(1).getStringCellValue());
+////            subAdmin.setEmail(row.getCell(2).getStringCellValue());
+////            subAdmin.setMobileNumber(row.getCell(3).getStringCellValue());
+////            subAdmin.setCourse(row.getCell(4).getStringCellValue());
+////            subAdmin.setPassword(row.getCell(5).getStringCellValue());
+////
+////            // Save using existing method
+////            addSubAdmin(domain, subAdmin);
+////        }
+////
+////        workbook.close();
+////    }
+//
+//
+//
+//    public void uploadSubAdminFromExcel(String domain, MultipartFile file) throws Exception {
+//
+//        InputStream is = file.getInputStream();
+//        Workbook workbook = new XSSFWorkbook(is);
+//        Sheet sheet = workbook.getSheetAt(0);
+//
+//        DataFormatter formatter = new DataFormatter(); // ⭐ important
+//
+//        for (Row row : sheet) {
+//
+//            if (row.getRowNum() == 0) continue; // skip header
+//
+//            SubAdminSignupDTO subAdmin = new SubAdminSignupDTO();
+//
+//            subAdmin.setSubAdminId(formatter.formatCellValue(row.getCell(0)));
+//            subAdmin.setName(formatter.formatCellValue(row.getCell(1)));
+//            subAdmin.setEmail(formatter.formatCellValue(row.getCell(2)));
+//            subAdmin.setMobileNumber(formatter.formatCellValue(row.getCell(3)));
+//            subAdmin.setCourse(formatter.formatCellValue(row.getCell(4)));
+//            subAdmin.setPassword(formatter.formatCellValue(row.getCell(5)));
+//
+//            addSubAdmin(domain, subAdmin);
+//        }
+//
+//        workbook.close();
+//    }
+//
+////
+////    📊 5. Excel Format (VERY IMPORTANT) ->  Your Excel file should look like this:
+////
+////   FacultyId   Name	        Email	         Mobile	   	 Course 	TeachingBatch	  Password
+////    101        Ashish	    ashish@gmail.com    9876543210	  BTech	     2A,2C,...	        12345
+////
+////            👉 Column order MUST match code
+//
+//
+
+
+// ─── Shared helper ───────────────────────────────────────────
+private String cellVal(DataFormatter fmt, Row row, int col) {
+    org.apache.poi.ss.usermodel.Cell cell = row.getCell(col);
+    if (cell == null) return "";
+    return fmt.formatCellValue(cell).trim();
+}
+
+    // ─── Student ─────────────────────────────────────────────────
+    public void uploadStudentsFromExcel(String domain, MultipartFile file) throws Exception {
+        InputStream is = file.getInputStream();
+        Workbook workbook = new XSSFWorkbook(is);
+        Sheet sheet = workbook.getSheetAt(0);
+        DataFormatter fmt = new DataFormatter();
+
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue;
+
+            StudentSignupDTO student = new StudentSignupDTO();
+            student.setRollNumber(cellVal(fmt, row, 0));
+            student.setName(cellVal(fmt, row, 1));
+            student.setEmail(cellVal(fmt, row, 2));
+            student.setMobileNumber(cellVal(fmt, row, 3));
+            student.setCourse(cellVal(fmt, row, 4));
+            student.setBranch(cellVal(fmt, row, 5));
+            student.setBatch(cellVal(fmt, row, 6));
+            student.setFatherName(cellVal(fmt, row, 7));
+            student.setFatherMobNo(cellVal(fmt, row, 8));
+            student.setPassword(cellVal(fmt, row, 9));
+
+            addStudent(domain, student);
+        }
+        workbook.close();
+    }
+
+    // ─── Faculty ─────────────────────────────────────────────────
+    public void uploadFacultyFromExcel(String domain, MultipartFile file) throws Exception {
+        InputStream is = file.getInputStream();
+        Workbook workbook = new XSSFWorkbook(is);
+        Sheet sheet = workbook.getSheetAt(0);
+        DataFormatter fmt = new DataFormatter();
+
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue;
+
+            FacultySignupDTO faculty = new FacultySignupDTO();
+            faculty.setFacultyId(cellVal(fmt, row, 0));
+            faculty.setName(cellVal(fmt, row, 1));
+            faculty.setEmail(cellVal(fmt, row, 2));
+            faculty.setMobileNumber(cellVal(fmt, row, 3));
+            faculty.setCourse(cellVal(fmt, row, 4));
+            faculty.setTeachingBatch(cellVal(fmt, row, 5));
+            faculty.setPassword(cellVal(fmt, row, 6));
+
+            addFaculty(domain, faculty);
+        }
+        workbook.close();
+    }
+
+    // ─── SubAdmin ─────────────────────────────────────────────────
+    public void uploadSubAdminFromExcel(String domain, MultipartFile file) throws Exception {
+        InputStream is = file.getInputStream();
+        Workbook workbook = new XSSFWorkbook(is);
+        Sheet sheet = workbook.getSheetAt(0);
+        DataFormatter fmt = new DataFormatter();
+
+        for (Row row : sheet) {
+            if (row.getRowNum() == 0) continue;
+
+            SubAdminSignupDTO subAdmin = new SubAdminSignupDTO();
+            subAdmin.setSubAdminId(cellVal(fmt, row, 0));
+            subAdmin.setName(cellVal(fmt, row, 1));
+            subAdmin.setEmail(cellVal(fmt, row, 2));
+            subAdmin.setMobileNumber(cellVal(fmt, row, 3));
+            subAdmin.setCourse(cellVal(fmt, row, 4));
+            subAdmin.setPassword(cellVal(fmt, row, 5));
+
+            addSubAdmin(domain, subAdmin);
+        }
+        workbook.close();
+    }
 
 
 
 
 
-   
-
-    
-
-
-   
 }

@@ -6,13 +6,14 @@ import lombok.*;
 @AllArgsConstructor
 @Data
 public class SubAdminSignupDTO {
-    private String name;
-    private String mobileNumber;
-    private String email;
-    private String password; // Used for registration
 
     private String subAdminId;
+    private String name;
+    private String email;
+    private String mobileNumber;
+
     private String course;
-    
+    private String password; // Used for registration
+
 }
 

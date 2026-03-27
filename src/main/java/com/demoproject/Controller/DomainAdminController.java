@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -99,9 +100,11 @@ public class DomainAdminController {
      // Update Password or Forget Password
     @PutMapping("/forgot_update_password")
     // public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newPassword){
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newPassword){
-        try {
+    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String newPassword,
+        Authentication authentication){
 
+        try {
+            String email = authentication.getName();
             boolean save = domainAdminService.updatePasswordByEmail(domain, email, newPassword);
             return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
 
@@ -130,55 +133,19 @@ public class DomainAdminController {
     public List<StudentResponseDTO> getAllStudents(@PathVariable String domain) {
         return domainAdminService.getAllStudents(domain);
     }
-    
-    // READ ONE by domain + rollNo
-    @GetMapping("/student_by_rollno")
-    public Student getStudentByRollNo(@PathVariable String domain, @RequestParam String rollNo) {
-        return domainAdminService.getStudentByRollNo(domain, rollNo);
-    }
 
-    // ------ READ ONE by domain + Gmail ------
-    @GetMapping("/student_by_email")
-    public Student getStudentByEmail(@PathVariable String domain, @RequestParam String email) {
-        return domainAdminService.getStudentByEmail(email ,domain);
-    }
-
-    // ------ READ All by domain + Name ------
-    @GetMapping("/student_by_name")
-    public List<Student> getAllStudentByName(@PathVariable String domain, @RequestParam String name) {
-        return domainAdminService.getAllStudentByName(domain, name);
-    }
-
-    // READ by domain + Branch
-    @GetMapping("/student_by_branch")
-    public List<Student> getAllStudentByBranch(@PathVariable String domain, @RequestParam String branch) {
-        return domainAdminService.getAllStudentByBranch(domain, branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    @GetMapping("/student_by_course")
-    public List<Student> getAllStudentByCourse(@PathVariable String domain, @RequestParam String course) {
-        return domainAdminService.getAllStudentByCourse(domain, course);
-    }
-
-    // ------ READ All by domain + Batch ------
-    @GetMapping("/student_by_batch")
-    public List<Student> getAllStudentByBatch(@PathVariable String domain, @RequestParam String batch) {
-        return domainAdminService.getStudentByBatch(domain, batch);
-    }
- 
-
-    // ------ UPDATE  by email ------
-    @PutMapping("/update_student_by_email")
+    // ------ UPDATE  Student Profile ------
+    @PutMapping("/update_student_profile")
     public Boolean updateStudentByEmail(@PathVariable String domain,  @RequestBody Student s) {
         return domainAdminService.updateStudentByEmail(domain, s);
     }
 
-    // DELETE By RollNo
-    @DeleteMapping("/delete_student_by_email")
+    // DELETE By email
+    @DeleteMapping("/delete_student")
     public String deleteByEmail(@PathVariable String domain, @RequestParam String email) {
         return domainAdminService.deleteStudentByEmail(domain, email);
     }
+
 
 
 // ===== FACULTY CRUD =====
@@ -201,34 +168,18 @@ public class DomainAdminController {
         return domainAdminService.getAllFaculty(domain);
     }
    
-    //  READ ONE by domain + facultyId means (Id which provide by University or collage)
-    @GetMapping("/faculty_by_facultyId")
-    public Faculty getFacultyByFacultyId(@PathVariable String domain, @RequestParam String facultyId) {
-        return domainAdminService.getFacultyByFacultyId(domain, facultyId);
-    }
 
-    //  READ ONE by domain + gmail
-    @GetMapping("/faculty_by_gmail")
-    public ResponseEntity<?> getByGamil(@PathVariable String domain, @RequestParam String gmail) {
-        try {
-            Faculty get = domainAdminService.getFacultyByGmail(domain, gmail);
-            return new ResponseEntity<>(get,HttpStatus.OK);
-            
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
-    }
 
-    // ------ UPDATE by FacultyId(FacultyId) means (Id which provide by University or collage) ------
-    @PutMapping("/update_faculty_by_facultyId")
+    // ------ UPDATE Faculty Profile  ------
+    @PutMapping("/update_faculty")
     public Boolean updateFacultyByFacultyId(@PathVariable String domain, @RequestBody Faculty f) {
-        return domainAdminService.updateFacultyByFacultyId(domain, f);
+        return domainAdminService.updateFacultyByEmail(domain, f);
     }
 
     // ------ DELETE by facultyId ------
-    @DeleteMapping("/delete_faculty_by_facultyId")
-    public String deleteFacultyByDId(@PathVariable String domain, @RequestParam String facultyId) {
-        return domainAdminService.deleteFacultyByFacultyId(domain, facultyId);
+    @DeleteMapping("/delete_faculty")
+    public String deleteFacultyByDId(@PathVariable String domain, @RequestParam String email) {
+        return domainAdminService.deleteFacultyByEmail(domain, email);
     }
 
 
@@ -253,20 +204,65 @@ public class DomainAdminController {
         return domainAdminService.getAllSubAdmin(domain);
     }
 
-    //  READ ONE by domain + DomainId means (Id which provide by University or collage)
-    @GetMapping("/subadmin_by_subadminId")
-    public SubAdmin getSubAdminBySubAdminId(@PathVariable String domain, @PathVariable String subAdminId) {
-        return domainAdminService.getSubAdminBySubAdminId(domain, subAdminId);
-    }
     // UPDATE
-    @PutMapping("/update_subadmin_by_subadminId")
+    @PutMapping("/update_subadmin")
     public SubAdmin updateSubAdminBySubAdminId(@PathVariable String domain, @RequestBody SubAdmin s) {
-        return domainAdminService.updateSubAdminBySubAdminId(domain, s);
+        return domainAdminService.updateSubAdminByEmail(domain, s);
     }
 
     // DELETE
-    @DeleteMapping("/delete_subadmin_by_subadminId")
-    public String deleteSubAdminBySubAdminId(@PathVariable String domain, @RequestParam String subAdminId) {
-        return domainAdminService.deleteSubAdminBySubAdminId(domain, subAdminId);
+    @DeleteMapping("/delete_subadmin")
+    public String deleteSubAdminBySubAdminId(@PathVariable String domain, @RequestParam String email) {
+        return domainAdminService.deleteSubAdminByEmail(domain, email);
+    }
+
+
+//    🚀 1. Overall Flow (Understand First)
+//    Frontend (React)
+//          ↓ upload file
+//    Spring Boot Controller
+//          ↓
+//    Service Layer
+//          ↓
+//    Read Excel (Apache POI)
+//          ↓
+//    Loop rows → Save in DB
+
+
+    @PostMapping("/upload_students")
+    public ResponseEntity<?> uploadStudents(
+            @PathVariable String domain,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            domainAdminService.uploadStudentsFromExcel(domain, file);
+            return ResponseEntity.ok(
+            new ApiResponse<>(true, "Students uploaded successfully",null));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+//    Faculty
+    @PostMapping("/upload_faculty")
+    public ResponseEntity<?> uploadFacuty(
+            @PathVariable String domain,
+            @RequestParam("file") MultipartFile file) throws Exception {
+
+            domainAdminService.uploadFacultyFromExcel(domain, file);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "Faculty uploaded successfully",null));
+    }
+
+//    SubAdmin
+    @PostMapping("/upload_subAdmin")
+    public ResponseEntity<?> uploadSubAdmin(
+            @PathVariable String domain,
+            @RequestParam("file") MultipartFile file) throws Exception {
+
+            domainAdminService.uploadSubAdminFromExcel(domain, file);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(true, "SubAdmin uploaded successfully",null));
     }
 }

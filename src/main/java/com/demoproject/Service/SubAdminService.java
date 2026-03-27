@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.demoproject.Entity.*;
+import com.demoproject.Repository.FacultyRepository;
 import com.demoproject.Repository.StudentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,8 @@ public class SubAdminService {
     private StudentRepository studentRepository;
     @Autowired
     private StudentService studentService;
+    @Autowired
+    private FacultyRepository facultyRepository;
     @Autowired
     private FacultyService facultyService;
     @Autowired
@@ -189,13 +192,18 @@ public class SubAdminService {
     }
 
     // UPDATE  + SubAdminId means (subAdminId which provide by University or collage)
-    public SubAdmin updateSubAdminBySubAdminId(String domain, SubAdmin newData){
+    public SubAdmin updateSubAdminByEmail(String domain, SubAdmin newData){
         SubAdmin old = SArepo.findBySubAdminIdAndDomain(newData.getSubAdminId(), domain);
         if (old == null) return null;
-        
-        old.setName(newData.getName());
-        old.setCourse(newData.getCourse());
-        old.setMobileNumber(newData.getMobileNumber());
+
+        if (newData.getName() != null)
+            old.setName(newData.getName());
+
+        if (newData.getCourse() != null)
+            old.setCourse(newData.getCourse());
+
+        if (newData.getMobileNumber() != null)
+            old.setMobileNumber(newData.getMobileNumber());
         
         return SArepo.save(old);
     }
@@ -211,18 +219,32 @@ public class SubAdminService {
     }
 
     // DELETE
-    public String deleteSubAdminBySubAdminId(String domain, String subAdminId){
-        SubAdmin sa = SArepo.findBySubAdminIdAndDomain(subAdminId, domain);;
+    public String deleteSubAdminBySubAdminId(String domain, String email){
+        SubAdmin sa = SArepo.findBySubAdminIdAndDomain(email, domain);;
         if (sa == null) return "Not found";
 
         SArepo.delete(sa);
-        return "Deleted SubAdmin with DId (ID) : " + subAdminId;
+        return "Deleted SubAdmin with email id : " + email;
     }
 
 
 
     // ------ READ ALL faculty for specific university ------
-    public List<StudentResponseDTO> getStudentsByFacultyCourse(String domain, String email) {
+    public List<FacultyResponseDTO> getAllFacultyBySubAdminCourse(String domain, String email) {
+
+        SubAdmin subAdmin = SArepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+
+        String course = subAdmin.getCourse();
+
+        return facultyRepository.findByCourseAndDomain(course, domain)
+                .stream()
+                .map(faculty -> modelMapper.map(faculty, FacultyResponseDTO.class))
+                .toList();
+    }
+
+    // ------ READ ALL faculty for specific university ------
+    public List<StudentResponseDTO> getStudentBySubAdminCourse(String domain, String email) {
 
         SubAdmin subAdmin = SArepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
@@ -234,6 +256,7 @@ public class SubAdminService {
                 .map(student -> modelMapper.map(student, StudentResponseDTO.class))
                 .toList();
     }
+
     //  READ ONE by domain + DomainId(Did) means (Id which provide by University or collage)
     public Faculty getFacultyByFacultyId(String domain, String facultyId ) {
         return facultyService.getFacultyByFacultyId(domain, facultyId);

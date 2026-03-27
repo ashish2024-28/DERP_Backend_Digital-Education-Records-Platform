@@ -8,13 +8,12 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubAdminResponseDTO {
-   // Fields from BaseUser
+
     private String name;
     private String email;
     private String password;
     private String mobileNumber;
 
-    // Fields specific to SubAdmin
     private String subAdminId;
     private String course;
     private Instant createdDateTime;

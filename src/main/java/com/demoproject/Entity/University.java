@@ -60,7 +60,6 @@ public class University {
     @Column(nullable = false)
     private String establishmentYear;
 
-
     @Column(nullable = false)
     private String address; // Address same as Institution
 
@@ -73,7 +72,6 @@ public class University {
 
     @Column(nullable = false)
     private String mobileNumber;
-
 
     private Instant createdDateTime  = Instant.now(); // date and time when create account
 

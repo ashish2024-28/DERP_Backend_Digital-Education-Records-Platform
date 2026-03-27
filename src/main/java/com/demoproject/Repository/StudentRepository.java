@@ -60,7 +60,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
 
 //    faculty service call
-List<Student> findByCourseAndDomain(String course, String domain);
+     List<Student> findByCourseAndDomain(String course, String domain);
 
 
 }

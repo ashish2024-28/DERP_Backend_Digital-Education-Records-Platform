@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.List;
 
 import com.demoproject.DTO.ApiResponse;
+import com.demoproject.Service.FacultyService;
+import com.demoproject.Service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,10 @@ public class SubAdminController {
     @Autowired
     private SubAdminService sAService;
     @Autowired
+    private StudentService studentService;
+    @Autowired
+    private FacultyService facultyService;
+    @Autowired
     private UniversityService universityService;
 
 
@@ -74,18 +80,6 @@ public class SubAdminController {
         );
     }
 
-
-    // CREATE
-    @PostMapping("/add")
-    public ResponseEntity<?> add(@PathVariable String domain, @RequestBody SubAdminSignupDTO subAdmin) {
-       try {
-        String save = sAService.addSubAdmin(domain, subAdmin);
-        return new ResponseEntity<>(save,HttpStatus.CREATED);
-        
-    } catch (Exception e) {
-           return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-       }    
-    }
 
 
     //    updata profile picture
@@ -123,34 +117,22 @@ public class SubAdminController {
 
     // UPDATE Domain + DomainId means (DId which provide by University or collage)
     @PutMapping("/update_profile")
-    public SubAdmin  updateSubAdminByDomainId(@PathVariable String domain, @RequestBody SubAdmin subAdmin) {
-        return sAService. updateSubAdminBySubAdminId(domain, subAdmin);
+    public SubAdmin  updateSubAdminByDomainId(@PathVariable String domain, @RequestBody SubAdmin email) {
+        return sAService. updateSubAdminByEmail(domain, email);
     }
 
     // DELETE
-    @DeleteMapping("/delete_profile")
+    @DeleteMapping("/delete_account")
     public String deleteSubAdminByDomainId(@PathVariable String domain, @RequestBody String subAdminId) {
         return sAService.deleteSubAdminBySubAdminId(domain, subAdminId);
     }
 
 
 
-// ------ READ ALL faculty for specific university ------
+// ------ READ ALL faculty with SubAdmin Course for specific university ------
 
-   
-    //  READ ONE by domain + SubAdminId means (Id which provide by University or collage)
-    @GetMapping("/faculty_by_facultyId")
-    public Faculty getFacultyBySubAdminId(@PathVariable String domain, @PathVariable String facultyId) {
-        return sAService.getFacultyByFacultyId(domain, facultyId);
-    }
-
-
-
-
-
-    // ------ READ ALL student for specific university ------
-    @GetMapping("/all_student")
-    public ResponseEntity<?> getAllStudents(
+    @GetMapping("/all_faculty")
+    public ResponseEntity<?> getAllFacultyBySubAdminCourse(
             @PathVariable String domain,
             Authentication authentication) {
 
@@ -158,41 +140,25 @@ public class SubAdminController {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null,
-                        sAService.getStudentsByFacultyCourse(domain, email))
+                        sAService.getAllFacultyBySubAdminCourse(domain, email))
         );
     }
 
-    // get or READ ONE by domain + rollNo
-    @GetMapping("/student_by_rollno")
-    public Student getStudentByRollNo(@PathVariable String domain, @RequestParam String rollNo) {
-        return sAService.getStudentByRollNo(domain, rollNo);
+
+
+    // ------ READ ALL student with SubAdmin Course for specific university ------
+    @GetMapping("/all_student")
+    public ResponseEntity<?> getAllStudentBySubAdminCourse(
+            @PathVariable String domain,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, null,
+                        sAService.getStudentBySubAdminCourse(domain, email))
+        );
     }
-
-    // ------ READ All by domain + Name ------
-    @GetMapping("/student_by_name")
-    public List<Student> getStudentByName(@PathVariable String domain, @RequestParam String name) {
-        return sAService.getStudentByName(domain, name);
-    }
-
-    // READ by domain + Branch
-    @GetMapping("/student_by_branch")
-    public List<Student> getAllStudentByBranch(@PathVariable String domain, @RequestParam String branch) {
-        return sAService.getStudentByBranch(domain, branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    @GetMapping("/student_by_course")
-    public List<Student> getAllStudentByCourse(@PathVariable String domain, @RequestParam String course) {
-        return sAService.getStudentByCourse(domain, course);
-    }
-
-     // ------ READ All by domain + Batch ------
-    @GetMapping("/student_by_batch")
-    public List<Student> getAllStudentByBatch(@PathVariable String domain, @RequestParam String batch) {
-        return sAService.getStudentByBatch(domain, batch);
-    }
-
-
 
 
 }

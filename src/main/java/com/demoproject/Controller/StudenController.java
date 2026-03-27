@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.demoproject.Entity.Student;
@@ -96,9 +97,11 @@ public class StudenController {
 
     // Update Password or Forget Password
     @PutMapping("/forgot_update_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newpass){
-        try {
+    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,
+            Authentication authentication, @RequestParam String newpass){
 
+        try {
+            String email = authentication.getName();
             boolean save = studentService.updatePasswordByEmail(domain, email, newpass);
             return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
 
@@ -107,8 +110,8 @@ public class StudenController {
         }
     }
 
-    // ------ UPDATE  by email ------
-    @PutMapping("/update_by_email")
+    // ------ UPDATE  profile ------
+    @PutMapping("/update_profile")
     public ResponseEntity<?> updateStudentByRollNO(@PathVariable String domain, @RequestBody Student s) {
         try {
 
@@ -121,11 +124,12 @@ public class StudenController {
     }
 
 
-    // DELETE By RollNo
-    @DeleteMapping("/delete_by_gmail")
-    public ResponseEntity<?> deleteByRollNO(@PathVariable String domain, @RequestParam String email) {
+    // DELETE Account
+    @DeleteMapping("/delete_account")
+    public ResponseEntity<?> deleteByRollNO(@PathVariable String domain,
+        Authentication authentication) {
         try {
-
+            String email = authentication.getName();
             String save = studentService.deleteStudentByEmail(domain, email);
             System.out.println(save);
             return new ResponseEntity<>(save ,HttpStatus.OK);

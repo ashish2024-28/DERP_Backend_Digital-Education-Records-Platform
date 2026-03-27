@@ -69,24 +69,12 @@ public class FacultyController {
 
 
 
-    
-    // ---- CREATE ------
-    @PostMapping("/add")
-    public ResponseEntity<?> addFaculty(@PathVariable String domain, @RequestBody FacultySignupDTO s) {
-        try {
-            String save = fService.addFaculty(domain, s);
-            return new ResponseEntity<>(save,HttpStatus.CREATED);
-            
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);    
-        }
-    }
-
     // Update Password or Forget Password
     @PutMapping("/update_faculty_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newpass){
+    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,  @RequestParam String newpass,
+                                                   Authentication authentication){
         try {
-
+            String email = authentication.getName();
             boolean save = fService.updatePasswordByEmail(domain, email, newpass);
             return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
 
@@ -117,7 +105,7 @@ public class FacultyController {
 
 
     // ------ UPDATE by facultyid  ------
-    @PutMapping("/update_faculty")
+    @PutMapping("/update_profile")
     public ResponseEntity<?> updateFacultyByDid(@PathVariable String domain, @RequestBody Faculty faculty) {
         try {
             boolean get = fService.updateFacultyByFacultyEmail(domain, faculty);
@@ -130,9 +118,14 @@ public class FacultyController {
     }
 
     // ------ DELETE by facultyid ------
-    @DeleteMapping("/delete_faculty")
-    public String deleteFacultyByDId(@PathVariable String domain, @PathVariable String facultyId) {
-        return fService.deleteFacultyByFacultyId(domain, facultyId);
+
+    @DeleteMapping("/delete_account")
+    public String deleteFacultyByDId(@PathVariable String domain,
+        Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return fService.deleteFacultyByEmail(domain, email);
     }
 
 
@@ -140,7 +133,7 @@ public class FacultyController {
     // ------ READ ALL student for specific university ------
 
     @GetMapping("/all_student")
-    public ResponseEntity<?> getAllStudents(
+    public ResponseEntity<?> getAllStudentByFacultyCourse(
             @PathVariable String domain,
             Authentication authentication) {
 
@@ -151,38 +144,8 @@ public class FacultyController {
                         fService.getStudentsByFacultyCourse(domain, email))
         );
     }
-    
-    // get or READ ONE by domain + rollNo
-    @GetMapping("/student_by_rollno")
-    public Student getStudentByRollNo(@PathVariable String domain, @RequestParam String rollNo) {
-        return fService.getStudentByRollNo(domain, rollNo);
-    }
 
-    // ------ READ All by domain + Name ------
-    @GetMapping("/student_by_name")
-    public List<Student> getStudentByName(@PathVariable String domain, @RequestParam String name) {
-        return fService.getAllStudentByName(domain, name);
-    }
 
-    // READ by domain + Branch
-    @GetMapping("/student_by_branch")
-    public List<Student> getAllStudentByBranch(@PathVariable String domain, @RequestParam String branch) {
-        return fService.getStudentByBranch(domain, branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    @GetMapping("/student_by_course")
-    public List<Student> getAllStudentByCourse(@PathVariable String domain, @RequestParam String course) {
-        return fService.getStudentByCourse(domain, course);
-    }
-
-    // ------ READ All by domain + Batch ------
-    @GetMapping("/student_by_batch")
-    public List<Student> getAllStudentByBatch(@PathVariable String domain, @RequestParam String batch) {
-        return fService.getStudentByBatch(domain, batch);
-    }
-
-   
 }
 
 

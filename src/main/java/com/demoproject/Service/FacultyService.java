@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -161,12 +162,7 @@ public class FacultyService {
         return frepo.findByFacultyIdAndDomain(facultyId, domain);
     }
 
-    //  READ ONE by domain + gmail
-    public Faculty getFacultyByGmail(String domain, String gmail ) {
-        Faculty faculty = frepo.findByEmailAndDomain(gmail, domain).orElse(null); 
-        return frepo.save(faculty);
-    }
-    
+
     // Update Password or Forget Password
      public boolean updatePasswordByEmail(String domain, String email, String newPass ) {
         Faculty old = frepo.findByEmailAndDomain(email, domain).orElse(null);
@@ -193,15 +189,23 @@ public class FacultyService {
     }
 
     // ------ UPDATE by  ------
-    public Boolean updateFacultyByFacultyEmail(String domain, Faculty f) {
-        Faculty old = frepo.findByEmailAndDomain(f.getEmail(), domain).orElse(null);
+    public Boolean updateFacultyByFacultyEmail(String domain, Faculty newData) {
+        Faculty old = frepo.findByEmailAndDomain(newData.getEmail(), domain).orElse(null);
         if (old == null) return false;
-        
-        old.setName(f.getName());
-        old.setCourse(f.getCourse());
-        old.setTeachingBatch(f.getTeachingBatch());
-        old.setMobileNumber(f.getMobileNumber());
-        
+
+        if (newData.getName() != null)
+            old.setName(newData.getName());
+
+        if (newData.getCourse() != null)
+            old.setCourse(newData.getCourse());
+
+        if (newData.getTeachingBatch() != null)
+            old.setTeachingBatch(newData.getTeachingBatch());
+
+        if (newData.getMobileNumber() != null)
+            old.setMobileNumber(newData.getMobileNumber());
+
+
         frepo.save(old);
         return true;
     }
@@ -216,15 +220,16 @@ public class FacultyService {
         return "Deleted faculty with id " + id;
     }
 
-    // ------ DELETE by Did (Domain Id) ------
-    public String deleteFacultyByFacultyId(String domain, String facultyId) {
-        Faculty f = frepo.findByFacultyIdAndDomain(facultyId, domain);
-        if (f == null) return "Invalid faculty ID";
-        frepo.delete(f);
-        return "Deleted faculty with id " + facultyId ;
-    }
-   
+    // ------ DELETE by Email  ------
+    public String deleteFacultyByEmail(String domain, String email) {
+        Faculty f = frepo.findByEmailAndDomain(email, domain).orElse(null);
+        if (f != null) {
+            frepo.delete(f);
+            return "Deleted faculty with email id " + email ;
+        }
+         return "Invalid faculty email";
 
+    }
 
     
     // ------ READ ALL student for specific university ------
@@ -266,7 +271,6 @@ public class FacultyService {
     public List<Student> getStudentByBatch(String domain, String batch) {
         return studentService.getAllStudentByBatch(domain, batch);
     }
-
 
 
 }
