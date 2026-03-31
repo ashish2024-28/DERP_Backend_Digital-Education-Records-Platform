@@ -123,8 +123,11 @@ public class SubAdminController {
 
     // DELETE
     @DeleteMapping("/delete_account")
-    public String deleteSubAdminByDomainId(@PathVariable String domain, @RequestBody String subAdminId) {
-        return sAService.deleteSubAdminBySubAdminId(domain, subAdminId);
+    public String deleteSubAdminByEmail(@PathVariable String domain,
+        Authentication authentication) {
+
+        String email = authentication.getName();
+        return sAService.deleteSubAdminBySubAdminEmail(domain, email);
     }
 
 
@@ -132,15 +135,12 @@ public class SubAdminController {
 // ------ READ ALL faculty with SubAdmin Course for specific university ------
 
     @GetMapping("/all_faculty")
-    public ResponseEntity<?> getAllFacultyBySubAdminCourse(
+    public ResponseEntity<?> getAllFaculty(
             @PathVariable String domain,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
         return ResponseEntity.ok(
-                new ApiResponse<>(true, null,
-                        sAService.getAllFacultyBySubAdminCourse(domain, email))
+                new ApiResponse<>(true, null, facultyService.getAllFaculty(domain))
         );
     }
 
@@ -152,11 +152,9 @@ public class SubAdminController {
             @PathVariable String domain,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null,
-                        sAService.getStudentBySubAdminCourse(domain, email))
+                        studentService.getAllStudent(domain))
         );
     }
 

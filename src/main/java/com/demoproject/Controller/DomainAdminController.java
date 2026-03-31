@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.demoproject.DTO.ApiResponse;
+import com.demoproject.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +34,6 @@ import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
 import com.demoproject.Entity.Faculty;
 import com.demoproject.Entity.Student;
 import com.demoproject.Entity.SubAdmin;
-import com.demoproject.Service.DomainAdminService;
-import com.demoproject.Service.UniversityService;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -48,6 +47,12 @@ public class DomainAdminController {
 
     @Autowired
     private DomainAdminService domainAdminService;
+    @Autowired
+    private SubAdminService subAdminService;
+    @Autowired
+    private FacultyService facultyService;
+    @Autowired
+    private StudentService studentService;
     @Autowired
     private UniversityService universityService;
 
@@ -120,7 +125,7 @@ public class DomainAdminController {
     @PostMapping("/add_student")
     public ResponseEntity<?> addStudent(@PathVariable String domain, @RequestBody StudentSignupDTO s) {
        try {
-        String save = domainAdminService.addStudent(domain, s);
+        String save = studentService.addStudent(domain, s);
         return new ResponseEntity<>(save,HttpStatus.CREATED);
         
     } catch (Exception e) {
@@ -131,19 +136,19 @@ public class DomainAdminController {
     // ------ READ ALL student for specific university ------
     @GetMapping("/all_student")
     public List<StudentResponseDTO> getAllStudents(@PathVariable String domain) {
-        return domainAdminService.getAllStudents(domain);
+        return studentService.getAllStudent(domain);
     }
 
     // ------ UPDATE  Student Profile ------
     @PutMapping("/update_student_profile")
     public Boolean updateStudentByEmail(@PathVariable String domain,  @RequestBody Student s) {
-        return domainAdminService.updateStudentByEmail(domain, s);
+        return studentService.updateStudentByEmail(domain, s);
     }
 
     // DELETE By email
     @DeleteMapping("/delete_student")
     public String deleteByEmail(@PathVariable String domain, @RequestParam String email) {
-        return domainAdminService.deleteStudentByEmail(domain, email);
+        return studentService.deleteStudentByEmail(domain, email);
     }
 
 
@@ -154,7 +159,7 @@ public class DomainAdminController {
     @PostMapping("/add_faculty")
     public ResponseEntity<?> addFaculty(@PathVariable String domain, @RequestBody FacultySignupDTO f) {
        try {
-        String save = domainAdminService.addFaculty(domain, f);
+        String save = facultyService.addFaculty(domain, f);
         return new ResponseEntity<>(save,HttpStatus.CREATED);
         
     } catch (Exception e) {
@@ -165,7 +170,7 @@ public class DomainAdminController {
     // ------ READ ALL faculty for specific university ------
     @GetMapping("/all_faculty")
     public List<FacultyResponseDTO> getAllFaculty(@PathVariable String domain) {
-        return domainAdminService.getAllFaculty(domain);
+        return facultyService.getAllFaculty(domain);
     }
    
 
@@ -173,13 +178,13 @@ public class DomainAdminController {
     // ------ UPDATE Faculty Profile  ------
     @PutMapping("/update_faculty")
     public Boolean updateFacultyByFacultyId(@PathVariable String domain, @RequestBody Faculty f) {
-        return domainAdminService.updateFacultyByEmail(domain, f);
+        return facultyService.updateFacultyByFacultyEmail(domain, f);
     }
 
     // ------ DELETE by facultyId ------
     @DeleteMapping("/delete_faculty")
     public String deleteFacultyByDId(@PathVariable String domain, @RequestParam String email) {
-        return domainAdminService.deleteFacultyByEmail(domain, email);
+        return facultyService.deleteFacultyByEmail(domain, email);
     }
 
 
@@ -189,7 +194,7 @@ public class DomainAdminController {
     @PostMapping("/add_subAdmin")
     public ResponseEntity<?> addSubAdmin(@PathVariable String domain, @RequestBody SubAdminSignupDTO subAdmin) {
        try {
-        String save = domainAdminService.addSubAdmin(domain, subAdmin);
+        String save = subAdminService.addSubAdmin(domain, subAdmin);
         return new ResponseEntity<>(save,HttpStatus.CREATED);
         
     } catch (Exception e) {
@@ -201,19 +206,19 @@ public class DomainAdminController {
     // READ ALL subadmin by domain
     @GetMapping("/all_subadmin")
     public List<SubAdminResponseDTO> getAllSubAdmin(@PathVariable String domain) {
-        return domainAdminService.getAllSubAdmin(domain);
+        return subAdminService.getAllSubAdmin(domain);
     }
 
     // UPDATE
     @PutMapping("/update_subadmin")
     public SubAdmin updateSubAdminBySubAdminId(@PathVariable String domain, @RequestBody SubAdmin s) {
-        return domainAdminService.updateSubAdminByEmail(domain, s);
+        return subAdminService.updateSubAdminByEmail(domain, s);
     }
 
     // DELETE
     @DeleteMapping("/delete_subadmin")
     public String deleteSubAdminBySubAdminId(@PathVariable String domain, @RequestParam String email) {
-        return domainAdminService.deleteSubAdminByEmail(domain, email);
+        return subAdminService.deleteSubAdminBySubAdminEmail(domain, email);
     }
 
 

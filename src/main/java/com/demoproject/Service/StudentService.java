@@ -269,10 +269,12 @@ public class StudentService {
     // ------ DELETE By RollNo ------
     public String deleteStudentByEmail(String domain, String email) {
         Student s = repo.findByEmailAndDomain(email, domain).orElse(null);
-        if (s == null) return "Invalid student";
-        String rollno = s.getRollNumber();
-        repo.delete(s);
-        return "Deleted student with RollNo " + rollno;
+
+        if (s != null) {
+            repo.delete(s);
+            return "Deleted student with email id : " + email;
+        }
+        return "Invalid Please try again ";
     }
 
 

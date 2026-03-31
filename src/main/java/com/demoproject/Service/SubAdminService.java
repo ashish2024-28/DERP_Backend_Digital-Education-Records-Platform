@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.demoproject.Entity.*;
@@ -219,39 +220,36 @@ public class SubAdminService {
     }
 
     // DELETE
-    public String deleteSubAdminBySubAdminId(String domain, String email){
-        SubAdmin sa = SArepo.findBySubAdminIdAndDomain(email, domain);;
-        if (sa == null) return "Not found";
-
-        SArepo.delete(sa);
-        return "Deleted SubAdmin with email id : " + email;
+    public String deleteSubAdminBySubAdminEmail(String domain, String email){
+        SubAdmin sa = SArepo.findByDomainAndEmail(domain ,email);
+        if (sa != null) {
+            SArepo.delete(sa);
+            return "Deleted SubAdmin with email id : " + email;
+        }
+        return "Invalid Please try again ";
     }
 
 
 
     // ------ READ ALL faculty for specific university ------
-    public List<FacultyResponseDTO> getAllFacultyBySubAdminCourse(String domain, String email) {
+    public List<FacultyResponseDTO> getAllFaculty(String domain, String email) {
 
         SubAdmin subAdmin = SArepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
 
-        String course = subAdmin.getCourse();
-
-        return facultyRepository.findByCourseAndDomain(course, domain)
+        return facultyRepository.findByDomain(domain)
                 .stream()
                 .map(faculty -> modelMapper.map(faculty, FacultyResponseDTO.class))
                 .toList();
     }
 
     // ------ READ ALL faculty for specific university ------
-    public List<StudentResponseDTO> getStudentBySubAdminCourse(String domain, String email) {
+    public List<StudentResponseDTO> getAllStudent(String domain, String email) {
 
         SubAdmin subAdmin = SArepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Faculty not found"));
 
-        String course = subAdmin.getCourse();
-
-        return studentRepository.findByCourseAndDomain(course, domain)
+        return studentRepository.findAllByDomain(domain)
                 .stream()
                 .map(student -> modelMapper.map(student, StudentResponseDTO.class))
                 .toList();

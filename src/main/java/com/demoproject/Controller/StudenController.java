@@ -131,7 +131,6 @@ public class StudenController {
         try {
             String email = authentication.getName();
             String save = studentService.deleteStudentByEmail(domain, email);
-            System.out.println(save);
             return new ResponseEntity<>(save ,HttpStatus.OK);
 
         } catch (Exception e) {

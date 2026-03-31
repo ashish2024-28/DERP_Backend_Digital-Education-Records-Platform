@@ -227,7 +227,7 @@ public class FacultyService {
             frepo.delete(f);
             return "Deleted faculty with email id " + email ;
         }
-         return "Invalid faculty email";
+         return "Invalid Please try again ";
 
     }
 

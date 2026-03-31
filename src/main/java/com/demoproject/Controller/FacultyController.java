@@ -120,11 +120,10 @@ public class FacultyController {
     // ------ DELETE by facultyid ------
 
     @DeleteMapping("/delete_account")
-    public String deleteFacultyByDId(@PathVariable String domain,
+    public String deleteFacultyByEmail(@PathVariable String domain,
         Authentication authentication) {
 
         String email = authentication.getName();
-
         return fService.deleteFacultyByEmail(domain, email);
     }
 
