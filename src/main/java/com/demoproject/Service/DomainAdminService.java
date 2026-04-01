@@ -9,6 +9,7 @@ import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
 import com.demoproject.Entity.*;
 
+import com.demoproject.Repository.UniversityRepo;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DomainAdminService {
@@ -45,6 +47,8 @@ public class DomainAdminService {
     private DomainAdminRepository dAdminRepo;
     @Autowired
     private UniversityService universityService;
+    @Autowired
+    private UniversityRepo universityRepo;
     @Autowired
     @Qualifier("bcryptEncoder")
     PasswordEncoder passwordEncoder;
@@ -123,7 +127,37 @@ public class DomainAdminService {
 
     }
 
-// count
+
+// ======== University profile Update ========
+
+    //    updata university logo
+    public String updateUniversityLogo(String domain,String email, MultipartFile file) throws IOException {
+
+        boolean isDomainAdminExist = dAdminRepo.existsByEmailAndDomain(email, domain);
+        if(!isDomainAdminExist){
+            throw new RuntimeException("Invalid ! University or domain");
+        }
+
+        University university = universityRepo.findByDomain(domain);
+
+        String uploadDir = "uploads/universityLogo/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        university.setUniversityLogoPath(uploadDir+fileName);
+
+        universityRepo.save(university);
+
+        return uploadDir+fileName;
+    }
+
+
+    // count
     public long getStudentCount(String domain) { return studentService.getStudentCount(domain);}
     public long getFacultyCount(String domain) {
         return facultyService.getFacultyCount(domain);

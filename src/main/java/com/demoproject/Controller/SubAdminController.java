@@ -61,7 +61,7 @@ public class SubAdminController {
 //   }
 
     @GetMapping
-    public ResponseEntity<?> getFaculty(@PathVariable String domain) {
+    public ResponseEntity<?> getSubAdmin(@PathVariable String domain) throws  Exception {
         // 1st option 
         // UsersPrinciple user =
         //     (UsersPrinciple) SecurityContextHolder
@@ -89,30 +89,23 @@ public class SubAdminController {
             @RequestParam MultipartFile profilePic
     ) throws IOException {
 
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         String path = sAService.updateProfilePic(domain,email,profilePic);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Profile updated successfully", path)
         );
-
     }
 
     // Update Password or Forget Password
     @PutMapping("/forgot_update_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newpass){
-        try {
+    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,
+            @RequestParam String newpass, Authentication authentication){
 
+            String email = authentication.getName();
             boolean save = sAService.updatePasswordByEmail(domain, email, newpass);
             return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
     }
 
     // UPDATE Domain + DomainId means (DId which provide by University or collage)
@@ -136,8 +129,7 @@ public class SubAdminController {
 
     @GetMapping("/all_faculty")
     public ResponseEntity<?> getAllFaculty(
-            @PathVariable String domain,
-            Authentication authentication) {
+            @PathVariable String domain) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null, facultyService.getAllFaculty(domain))
@@ -149,8 +141,7 @@ public class SubAdminController {
     // ------ READ ALL student with SubAdmin Course for specific university ------
     @GetMapping("/all_student")
     public ResponseEntity<?> getAllStudentBySubAdminCourse(
-            @PathVariable String domain,
-            Authentication authentication) {
+            @PathVariable String domain) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null,

@@ -71,53 +71,38 @@ public class FacultyController {
 
     // Update Password or Forget Password
     @PutMapping("/update_faculty_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,  @RequestParam String newpass,
-                                                   Authentication authentication){
-        try {
-            String email = authentication.getName();
-            boolean save = fService.updatePasswordByEmail(domain, email, newpass);
-            return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
+    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,
+        @RequestParam String newpass, Authentication authentication) throws IOException {
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
+        String email = authentication.getName();
+        boolean save = fService.updatePasswordByEmail(domain, email, newpass);
+        return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
     }
 
     //    updata profile picture
     @PutMapping("/update_profile_pic")
     public ResponseEntity<?> updateProfilePic(
-            @PathVariable String domain,
-            @RequestParam MultipartFile profilePic
+            @PathVariable String domain, @RequestParam MultipartFile profilePic
     ) throws IOException {
 
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         String path = fService.updateProfilePic(domain,email,profilePic);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Profile updated successfully", path)
         );
-
     }
 
 
-    // ------ UPDATE by facultyid  ------
+    // ------ UPDATE by faculty Email  ------
     @PutMapping("/update_profile")
-    public ResponseEntity<?> updateFacultyByDid(@PathVariable String domain, @RequestBody Faculty faculty) {
-        try {
-            boolean get = fService.updateFacultyByFacultyEmail(domain, faculty);
-            return new ResponseEntity<>(get,HttpStatus.OK);
-            
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
-        
+    public ResponseEntity<?> updateFacultyByEmainl(@PathVariable String domain, @RequestBody Faculty faculty) throws Exception{
+
+        boolean get = fService.updateFacultyByFacultyEmail(domain, faculty);
+        return new ResponseEntity<>(get,HttpStatus.OK);
     }
 
-    // ------ DELETE by facultyid ------
+    // ------ DELETE by faculty Email ------
 
     @DeleteMapping("/delete_account")
     public String deleteFacultyByEmail(@PathVariable String domain,

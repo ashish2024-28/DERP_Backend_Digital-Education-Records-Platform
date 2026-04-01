@@ -123,8 +123,10 @@ public class StudentService {
 
         Student save = modelMapper.map(signupStudent, Student.class);
 
-        University university = universityRepo.findByDomain(domain)
-        .orElseThrow(() -> new RuntimeException("Invalid domain"));
+        University university = universityRepo.findByDomain(domain);
+        if(university == null ){
+            throw new RuntimeException("Invalid domain");
+        }
         save.setDomain(domain);
         save.setUniversity(university);
 

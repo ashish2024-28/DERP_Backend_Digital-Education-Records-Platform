@@ -181,9 +181,11 @@ public class UniversityService {
 
     public UniversityNameDomainLogoPathDTO getUniversityName_Logo(String domain) throws Exception {
 
-        University university = universityRepo.findByDomain(domain).orElseThrow(() -> new Exception("Invalid domain"));
+        University university = universityRepo.findByDomain(domain);
+        if(university == null ){
+            throw new RuntimeException("Invalid domain");
+        }
 
-        
         String name = Optional.ofNullable(university.getUniversityName())
                 .filter(n -> !n.isBlank())
                 .orElse(university.getInstitutionName());
@@ -211,12 +213,13 @@ public class UniversityService {
 
     // Get By Domain   This will match /hu, /dtu, /aku etc.
     public University getByDomain(String domain) {
-        return universityRepo.findByDomain(domain).orElse(null);
+        return universityRepo.findByDomain(domain);
     }
     
     // UPDATE id and domain
-    public University updateUniversity(String domain, Long id,University univ){
-        University old = universityRepo.findByDomainAndId(domain,id).orElse(null);
+    public University updateUniversity(String domain, Long id, University univ) {
+        University old = universityRepo.findByDomainAndId(domain, id)
+                .orElseThrow(() -> new RuntimeException("University not found for domain=" + domain + " id=" + id));
         old.setUniversityName(univ.getUniversityName());
         return universityRepo.save(old);
     }

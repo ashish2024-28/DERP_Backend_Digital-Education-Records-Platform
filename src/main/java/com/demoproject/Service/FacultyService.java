@@ -118,8 +118,11 @@ public class FacultyService {
             throw new RuntimeException("User Exist Please Try Another Email Id.");
         }
 
-        University university = universityRepo.findByDomain(domain)
-        .orElseThrow(() -> new RuntimeException("Invalid domain"));
+        University university = universityRepo.findByDomain(domain);
+        if(university == null){
+            throw new RuntimeException("Invalid Domain");
+        }
+
         requesFaculty.setDomain(domain);
         requesFaculty.setUniversity(university);
 
@@ -245,31 +248,6 @@ public class FacultyService {
                 .stream()
                 .map(student -> modelMapper.map(student, StudentResponseDTO.class))
                 .toList();
-    }
-
-    // ------ READ ONE by domain + rollNo ------
-    public Student getStudentByRollNo(String domain, String rollNo) {
-        return studentService.getStudentByRollNo(domain, rollNo);
-    }
-
-    // ------ READ ONE by domain + Name ------
-    public List<Student> getAllStudentByName(String domain, String name) {
-        return studentService.getAllStudentByName(domain, name);
-    }
-
-    // ------ READ All by domain + Branch ------
-    public List<Student> getStudentByBranch(String domain,String branch) {
-        return studentService.getAllStudentByBranch(domain,branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    public List<Student> getStudentByCourse(String domain,String course) {
-        return studentService.getAllStudentByCourse(domain,course);
-    }
-
-    // ------ READ All by domain + Batch ------
-    public List<Student> getStudentByBatch(String domain, String batch) {
-        return studentService.getAllStudentByBatch(domain, batch);
     }
 
 

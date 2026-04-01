@@ -114,11 +114,12 @@ public class SubAdminService {
         if(baseUserService.existsUserByEmail(signupDTO.getEmail())){
             throw new RuntimeException("User already exists with this email.");
         }
-
         SubAdmin requestSubAdmin = modelMapper.map(signupDTO, SubAdmin.class);
 
-        University university = universityRepo.findByDomain(domain)
-            .orElseThrow(() -> new RuntimeException("University not found"));
+        University university = universityRepo.findByDomain(domain);
+        if(university == null ){
+            throw new RuntimeException("Invalid domain");
+        }
         requestSubAdmin.setDomain(domain);
         requestSubAdmin.setUniversity(university);
        

@@ -70,11 +70,7 @@ public class StudenController {
             @RequestParam MultipartFile profilePic
     ) throws IOException {
 
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         String path = studentService.updateProfilePic(domain,email,profilePic);
 
         return ResponseEntity.ok(
@@ -83,50 +79,30 @@ public class StudenController {
 
     }
 
-    // // CREATE
-    // @PostMapping("/add")
-    // public ResponseEntity<?> add(@PathVariable String domain, @RequestBody Student s) {
-    //     try {
-    //         String save = service.addStudent(domain, s);
-    //         return new ResponseEntity<>(save,HttpStatus.CREATED);
-
-    //     } catch (Exception e) {
-    //         return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-    //     }
-    // }
-
     // Update Password or Forget Password
     @PutMapping("/forgot_update_password")
     public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,
-            Authentication authentication, @RequestParam String newpass){
+            Authentication authentication, @RequestParam String newpass) throws  Exception{
 
-        try {
-            String email = authentication.getName();
-            boolean save = studentService.updatePasswordByEmail(domain, email, newpass);
-            return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
+        String email = authentication.getName();
+        boolean save = studentService.updatePasswordByEmail(domain, email, newpass);
+        return new ResponseEntity<>(save + " Password change successfully \n",HttpStatus.CREATED);
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
     }
 
     // ------ UPDATE  profile ------
     @PutMapping("/update_profile")
-    public ResponseEntity<?> updateStudentByRollNO(@PathVariable String domain, @RequestBody Student s) {
-        try {
+    public ResponseEntity<?> updateStudentByEmail(@PathVariable String domain, @RequestBody Student s) throws  Exception{
 
-            boolean save = studentService.updateStudentByEmail(domain, s);
-            return new ResponseEntity<>(save + " Update successfully \n",HttpStatus.CREATED);
+        boolean save = studentService.updateStudentByEmail(domain, s);
+        return new ResponseEntity<>(save + " Update successfully \n",HttpStatus.CREATED);
 
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
     }
 
 
     // DELETE Account
     @DeleteMapping("/delete_account")
-    public ResponseEntity<?> deleteByRollNO(@PathVariable String domain,
+    public ResponseEntity<?> deleteByEmail(@PathVariable String domain,
         Authentication authentication) {
         try {
             String email = authentication.getName();

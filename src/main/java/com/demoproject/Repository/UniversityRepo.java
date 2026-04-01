@@ -15,9 +15,10 @@ public interface UniversityRepo extends JpaRepository<University,Long> {
 
     // University findByDomain(String domain);
     
-    Optional<University> findByDomain(String domain);
+    <Optional>University findByDomain(String domain);
+
     // University findByDomain(String domain);
-    
+
     Optional<University> findByDomainAndId(String domain, Long id);
     
     void deleteByIdAndDomain(Long id, String domain);
