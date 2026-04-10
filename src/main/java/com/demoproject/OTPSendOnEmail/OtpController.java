@@ -13,7 +13,7 @@ public class OtpController {
 
     // SEND OTP
     @PostMapping("/send")
-    public ApiResponse<String> sendOtp(@RequestParam String email) {
+    public ApiResponse<String> sendOtp(@RequestParam String email) throws Exception {
 
         otpService.sendOtp(email);
 
@@ -29,7 +29,7 @@ public class OtpController {
     public ApiResponse<Boolean> verifyOtp(
             @RequestParam String email,
             @RequestParam String otp
-    ) {
+    ) throws Exception {
 
         boolean valid = otpService.verifyOtp(email, otp);
 
