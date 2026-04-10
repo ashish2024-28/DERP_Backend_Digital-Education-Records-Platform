@@ -181,11 +181,11 @@
 
 
 
-		<!-- Email Sending -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
+<!--		&lt;!&ndash; Email Sending &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-mail</artifactId>-->
+<!--		</dependency>-->
 	<!--Radis -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
