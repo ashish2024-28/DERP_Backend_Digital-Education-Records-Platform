@@ -1,29 +1,46 @@
 package com.demoproject.DTO.StudentDTO;
 
-import java.time.Instant;
-
 import lombok.*;
 
+import java.time.Instant;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class StudentResponseDTO {
-   
-    private String name;
-    private String rollNumber;
-    private String email;
-    private String password;
-    private String mobileNumber;
-    private String fatherName;
-    private String fatherMobNo;
-    private String course;
-    private String branch;
-    private String batch;
-    private Instant createdDateTime;
-    private Instant lastLoginDateTime; // For login purposes
-    private String profilePic;// store image path OR base64
 
+    private String name;
+
+    private String email;
+
+    private String mobileNumber;
+
+    private Instant createdDateTime;
+
+    private Instant lastLoginDateTime;
+
+    private String profilePic;
+
+
+    private String rollNumber;
+
+    private String course;
+
+    private String branch;
+
+    private String batch;
+
+    private String studyBatch;
+
+    private List<String> studySubjects;
+
+    private String fatherName;
+
+    private String fatherMobNo;
+
+    private String universityName;
+
+    private String password;
 
 }
-

@@ -14,13 +14,19 @@ public class UniversityResponseDTO {
 
     private String domain;
     private String permanentId;
+
     private String institutionName; // Name of the Institution (may be same)
     private String universityName; // Name of the University (may be same)
+
     private String institutionType; //   (private ,State )
     private String establishmentYear;
+
     private String address; // Address same as Institution
+    private String state;
+
     private String email;
     private String mobileNumber;
+
     private Instant createdDateTime ; // date and time when create account
     private String universityLogoPath; // Stores "alex_profile.png"
 

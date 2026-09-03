@@ -193,12 +193,35 @@ public class UniversityService {
         
     }
 
+    //    updata Logo picture
+    public String updateLogo(String domain,String email, MultipartFile file) throws IOException {
+
+        DomainAdmin domainAdmin = dAdminRepo.findByDomainAndEmail(domain,email);
+
+        University university = domainAdmin.getUniversity();
+
+        String uploadDir = "uploads/profile/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        university.setUniversityLogoPath(uploadDir+fileName);
+
+        universityRepo.save(university);
+
+        return uploadDir+fileName;
+    }
 
 
 
 
 
-// **** these all are for official use only no others  ***** 
+
+    // **** these all are for official use only no others  *****
     // READ ALL
     public List<University> getAll(){
         return universityRepo.findAll();

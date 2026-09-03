@@ -2,21 +2,46 @@ package com.demoproject.DTO.StudentDTO;
 
 import lombok.*;
 
-@NoArgsConstructor
-@AllArgsConstructor
+import java.util.List;
+
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class StudentSignupDTO {
 
-    private String rollNumber;
     private String name;
+
     private String email;
-    private String mobileNumber; //Country code +91
+
+    private String mobileNumber;
+
+    private String rollNumber;
 
     private String course;
+
     private String branch;
+
     private String batch;
 
+    /*
+     * batch and section.
+     *
+     * Example:
+     * 2A
+     */
+    private String studyBatch;
+
+    /*
+     * Multiple subjects.
+     *
+     * Example:
+     *
+     * ["JAVA", "DSA", "OS", "DBMS"]
+     */
+    private List<String> studySubjects;
+
     private String fatherName;
+
     private String fatherMobNo;
 
     private String password;

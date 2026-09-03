@@ -2,32 +2,25 @@ package com.demoproject.Controller;
 
 
 import java.io.IOException;
-import java.util.List;
 
 import com.demoproject.DTO.ApiResponse;
+import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.Service.FacultyService;
 import com.demoproject.Service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
-import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
-import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
-import com.demoproject.Entity.Faculty;
-import com.demoproject.Entity.Student;
 import com.demoproject.Entity.SubAdmin;
 import com.demoproject.Service.SubAdminService;
 import com.demoproject.Service.UniversityService;
@@ -104,7 +97,7 @@ public class SubAdminController {
 
     // Update Password or Forget Password
     @PutMapping("/forgot_update_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newpass){
+    public ResponseEntity<?> updateSubAdminPassword(@PathVariable String domain, @RequestParam String email, @RequestParam String newpass){
         try {
 
             boolean save = sAService.updatePasswordByEmail(domain, email, newpass);
@@ -115,48 +108,39 @@ public class SubAdminController {
         }
     }
 
-    // UPDATE Domain + DomainId means (DId which provide by University or collage)
+    // ------ UPDATE SubAdmin Profile by Email  ------
     @PutMapping("/update_profile")
-    public SubAdmin  updateSubAdminByDomainId(@PathVariable String domain, @RequestBody SubAdmin email) {
+    public SubAdminResponseDTO updateSubAdminByDomainEmail(@PathVariable String domain, @RequestBody SubAdmin email) {
         return sAService. updateSubAdminByEmail(domain, email);
     }
 
     // DELETE
     @DeleteMapping("/delete_account")
-    public String deleteSubAdminByDomainId(@PathVariable String domain, @RequestBody String subAdminId) {
-        return sAService.deleteSubAdminBySubAdminId(domain, subAdminId);
+    public String deleteSubAdminByDomainEmail(@PathVariable String domain, @RequestBody String Email) {
+        return sAService.deleteSubAdminByEmail(domain, Email);
     }
 
 
-
-// ------ READ ALL faculty with SubAdmin Course for specific university ------
-
+// ------ READ ALL faculty specific university ------
     @GetMapping("/all_faculty")
-    public ResponseEntity<?> getAllFacultyBySubAdminCourse(
-            @PathVariable String domain,
-            Authentication authentication) {
-
-        String email = authentication.getName();
+    public ResponseEntity<?> getAllFaculty(
+            @PathVariable String domain) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null,
-                        sAService.getAllFacultyBySubAdminCourse(domain, email))
+                        facultyService.getAllFaculty(domain))
         );
     }
 
 
-
-    // ------ READ ALL student with SubAdmin Course for specific university ------
+    // ------ READ ALL student for specific university ------
     @GetMapping("/all_student")
     public ResponseEntity<?> getAllStudentBySubAdminCourse(
-            @PathVariable String domain,
-            Authentication authentication) {
-
-        String email = authentication.getName();
+            @PathVariable String domain) {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, null,
-                        sAService.getStudentBySubAdminCourse(domain, email))
+                        studentService.getAllStudent(domain))
         );
     }
 

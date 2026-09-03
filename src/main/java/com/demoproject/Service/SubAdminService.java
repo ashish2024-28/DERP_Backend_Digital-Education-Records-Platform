@@ -1,5 +1,25 @@
 package com.demoproject.Service;
 
+import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
+import com.demoproject.DTO.LoginRequestDTO;
+import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
+import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
+import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
+import com.demoproject.Entity.Role;
+import com.demoproject.Entity.SubAdmin;
+import com.demoproject.Entity.University;
+import com.demoproject.Repository.SubAdminRepository;
+import com.demoproject.Repository.UniversityRepo;
+
+import jakarta.validation.constraints.NotNull;
+
+import lombok.RequiredArgsConstructor;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -7,295 +27,657 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.demoproject.Entity.*;
-import com.demoproject.Repository.FacultyRepository;
-import com.demoproject.Repository.StudentRepository;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import com.demoproject.DTO.LoginRequestDTO;
-import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
-import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
-import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
-import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
-import com.demoproject.Repository.SubAdminRepository;
-import com.demoproject.Repository.UniversityRepo;
-import org.springframework.web.multipart.MultipartFile;
-
-
 @Service
+@RequiredArgsConstructor
 public class SubAdminService {
 
-    @Autowired
-    private StudentRepository studentRepository;
-    @Autowired
-    private StudentService studentService;
-    @Autowired
-    private FacultyRepository facultyRepository;
-    @Autowired
-    private FacultyService facultyService;
-    @Autowired
-    private SubAdminRepository SArepo;
-    @Autowired
-    private UniversityRepo universityRepo;
-    @Autowired
-    private BaseUserService baseUserService;
-    @Autowired
-    private ModelMapper modelMapper;
-    @Autowired
+    private final StudentService studentService;
+
+    private final FacultyService facultyService;
+
+    private final SubAdminRepository SArepo;
+
+    private final UniversityRepo universityRepo;
+
+    private final BaseUserService baseUserService;
+
+    private final ModelMapper modelMapper;
+
     @Qualifier("bcryptEncoder")
-    private PasswordEncoder passwordEncoder ;
-
-    
-
-    //  Login by domain + email + Password
-    public SubAdmin LoginSubAdmin(LoginRequestDTO loginRequestDTO){
-        SubAdmin subAdminLogin = SArepo.findByEmailAndDomain(loginRequestDTO.getEmail(), loginRequestDTO.getDomain()).orElse(null);
-        boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword() ,subAdminLogin.getPassword());
-
-        if (passwordMatch) {
-            subAdminLogin.setLastLoginDateTime(Instant.now());
-            return SArepo.save(subAdminLogin);
-            
-        } else {     return null;    }
-    }
+    private final PasswordEncoder passwordEncoder;
 
 
-    // login when frontend send jwt token
-    public SubAdminResponseDTO getSubAdminByEmailAndDomain(String email, String domain) {
-        SubAdmin subAdminLogin = SArepo.findByEmailAndDomain(email,domain).orElseThrow();
+    // =========================================================
+    // LOGIN
+    // =========================================================
 
-        // set lastLoginDateTime
-        Instant lastLogin = subAdminLogin.getLastLoginDateTime();
+    public SubAdmin LoginSubAdmin(
+            LoginRequestDTO request) {
 
-        subAdminLogin.setLastLoginDateTime(Instant.now());
-        subAdminLogin =  SArepo.save(subAdminLogin);
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        request.getEmail(),
+                        request.getDomain()
+                ).orElse(null);
 
-        subAdminLogin.setLastLoginDateTime(lastLogin);
-        
-        SubAdminResponseDTO responseDTO =  modelMapper.map(subAdminLogin, SubAdminResponseDTO.class) ;
-        responseDTO.setLastLoginDateTime(lastLogin);
-
-        return responseDTO;
-    }
-
-
-    //    updata profile picture
-    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
-
-        SubAdmin subAdmin = SArepo.findByDomainAndEmail(domain,email);
-
-        String uploadDir = "uploads/profile/";
-        Files.createDirectories(Paths.get(uploadDir));
-
-        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
-
-        Path path = Paths.get(uploadDir,fileName);
-
-        Files.write(path,file.getBytes());
-
-        subAdmin.setProfilePic(uploadDir+fileName);
-
-        SArepo.save(subAdmin);
-
-        return uploadDir+fileName;
-    }
-
-
-    // CREATE
-    public String addSubAdmin(String domain, SubAdminSignupDTO signupDTO){
-
-        if(baseUserService.existsUserByEmail(signupDTO.getEmail())){
-            throw new RuntimeException("User already exists with this email.");
+        if (subAdmin == null) {
+            return null;
         }
 
-        SubAdmin requestSubAdmin = modelMapper.map(signupDTO, SubAdmin.class);
+        boolean passwordMatch =
+                passwordEncoder.matches(
+                        request.getPassword(),
+                        subAdmin.getPassword()
+                );
 
-        University university = universityRepo.findByDomain(domain)
-            .orElseThrow(() -> new RuntimeException("University not found"));
-        requestSubAdmin.setDomain(domain);
-        requestSubAdmin.setUniversity(university);
-       
-        if( SArepo.existsBySubAdminIdAndDomain(requestSubAdmin.getSubAdminId(),requestSubAdmin.getDomain())){ throw new RuntimeException("Sub Admin ID already exists.");  }
-        if( SArepo.existsByDomainAndEmail(requestSubAdmin.getDomain(),requestSubAdmin.getEmail())){ throw new RuntimeException("Sub Admin's field Email are already exist for this university. ");  }
-        if( SArepo.existsByEmail(requestSubAdmin.getEmail())){ throw new RuntimeException("Enter Unique Email Id. ");  }
+        if (!passwordMatch) {
+            return null;
+        }
 
-        // for security use passwordEncoder
-        requestSubAdmin.setPassword(passwordEncoder.encode(requestSubAdmin.getPassword()));
-        requestSubAdmin.setRole(Role.SUB_ADMIN);
-        SubAdmin save = SArepo.save(requestSubAdmin);
-        return save.getName() + ",\nYour Account is Created Successfully.\nSub Admin Id : " + save.getSubAdminId() ;
-            
-    }
+        subAdmin.setLastLoginDateTime(
+                Instant.now()
+        );
 
-    public long getSubAdminCount(String domain) {
-        return SArepo.countByUniversity_Domain(domain);
-    }
-
-
-
-    // ------ READ ALL domain for specific university ------
-    public List<SubAdminResponseDTO> getAllSubAdmin(String domain){
-        List<SubAdmin> subAdminList = SArepo.findByDomain(domain);
-
-        return subAdminList.stream()
-            .map(subAdmin -> modelMapper.map(subAdmin, SubAdminResponseDTO.class))
-            .collect(Collectors.toList());
-    }
-
-    // READ ONE by domain + id
-    // **** this is for official use only no others  ***** 
-    public SubAdmin getSubAdminById(String domain, Long id){
-        return SArepo.findByIdAndDomain(id ,domain);
-    }
-    
-    // //  READ ONE by domain + DomainId means (Id which provide by University or collage)
-    public SubAdmin getSubAdminBySubAdminId(String domain, String subAdminId){
-        return SArepo.findBySubAdminIdAndDomain(subAdminId, domain);
-    }
-    
-    //  READ ONE by domain + Email
-    public SubAdmin getFacultyByEmail(String domain, String email ) {
-
-        SubAdmin subAdmin = SArepo.findByEmailAndDomain(email, domain).orElse(null); 
         return SArepo.save(subAdmin);
     }
 
-    // Update Password or Forget Password
-     public boolean updatePasswordByEmail(String domain, String email, String newPass ) {
-        SubAdmin old = SArepo.findByEmailAndDomain(email, domain).orElse(null);
-        if (old == null) return false;
 
-        old.setPassword(passwordEncoder.encode(newPass));
-        SArepo.save(old);
+    // =========================================================
+    // CURRENT SUBADMIN
+    // =========================================================
+
+    public SubAdminResponseDTO
+    getSubAdminByEmailAndDomain(
+            String email,
+            String domain) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        Instant previousLogin =
+                subAdmin.getLastLoginDateTime();
+
+        subAdmin.setLastLoginDateTime(
+                Instant.now()
+        );
+
+        SArepo.save(subAdmin);
+
+        return toResponse(
+                subAdmin,
+                previousLogin
+        );
+    }
+
+
+    // =========================================================
+    // PROFILE IMAGE
+    // =========================================================
+
+    public String updateProfilePic(
+            String domain,
+            String email,
+            MultipartFile file)
+            throws IOException {
+
+        SubAdmin subAdmin =
+                SArepo.findByDomainAndEmail(
+                        domain,
+                        email
+                );
+
+        if (subAdmin == null) {
+            throw new RuntimeException(
+                    "SubAdmin not found"
+            );
+        }
+
+        String uploadDir =
+                "uploads/profile/";
+
+        Files.createDirectories(
+                Paths.get(uploadDir)
+        );
+
+        String original =
+                file.getOriginalFilename();
+
+        String safeName =
+                original == null
+                        ? "profile"
+                        : Paths.get(original)
+                        .getFileName()
+                        .toString();
+
+        String fileName =
+                System.currentTimeMillis()
+                        + "_"
+                        + safeName;
+
+        Path path =
+                Paths.get(
+                        uploadDir,
+                        fileName
+                );
+
+        Files.write(
+                path,
+                file.getBytes()
+        );
+
+        subAdmin.setProfilePic(
+                uploadDir + fileName
+        );
+
+        SArepo.save(subAdmin);
+
+        return uploadDir + fileName;
+    }
+
+
+    // =========================================================
+    // CREATE
+    // =========================================================
+
+    public String addSubAdmin(
+            @NotNull String domain,
+            @NotNull SubAdminSignupDTO dto) {
+
+        if (baseUserService.existsUserByEmail(
+                dto.getEmail())) {
+
+            throw new RuntimeException(
+                    "User already exists with this email."
+            );
+        }
+
+        University university =
+                universityRepo
+                        .findByDomain(domain)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "University not found"
+                                ));
+
+        SubAdmin subAdmin =
+                new SubAdmin();
+
+        subAdmin.setDomain(domain);
+
+        subAdmin.setUniversity(university);
+
+        subAdmin.setSubAdminId(
+                dto.getSubAdminId()
+        );
+
+        subAdmin.setName(
+                dto.getName()
+        );
+
+        subAdmin.setEmail(
+                dto.getEmail()
+        );
+
+        subAdmin.setMobileNumber(
+                dto.getMobileNumber()
+        );
+
+        subAdmin.setCourse(
+                dto.getCourse()
+        );
+
+        subAdmin.setPassword(
+                passwordEncoder.encode(
+                        dto.getPassword()
+                )
+        );
+
+        subAdmin.setRole(
+                Role.SUB_ADMIN
+        );
+
+        subAdmin.setTeachingAssignmentsMap(
+                dto.getTeachingAssignments()
+        );
+
+
+        if (SArepo.existsBySubAdminIdAndDomain(
+                subAdmin.getSubAdminId(),
+                domain)) {
+
+            throw new RuntimeException(
+                    "SubAdmin ID already exists."
+            );
+        }
+
+        SubAdmin saved =
+                SArepo.save(subAdmin);
+
+        return saved.getName()
+                + ",\nYour Account is Created Successfully."
+                + "\nSub Admin Id : "
+                + saved.getSubAdminId();
+    }
+
+
+    // =========================================================
+    // COUNT
+    // =========================================================
+
+    public long getSubAdminCount(
+            String domain) {
+
+        return SArepo
+                .countByUniversity_Domain(domain);
+    }
+
+
+    // =========================================================
+    // GET ALL
+    // =========================================================
+
+    public List<SubAdminResponseDTO>
+    getAllSubAdmin(
+            String domain) {
+
+        return SArepo
+                .findByDomain(domain)
+                .stream()
+                .map(subAdmin ->
+                        toResponse(
+                                subAdmin,
+                                null
+                        ))
+                .toList();
+    }
+
+
+    // =========================================================
+    // UPDATE PASSWORD
+    // =========================================================
+
+    public boolean updatePasswordByEmail(
+            String domain,
+            String email,
+            String newPassword) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElse(null);
+
+        if (subAdmin == null) {
+            return false;
+        }
+
+        subAdmin.setPassword(
+                passwordEncoder.encode(
+                        newPassword
+                )
+        );
+
+        SArepo.save(subAdmin);
+
         return true;
-
     }
 
-    // UPDATE 
-    // **** this is for official use only no others  ***** 
-    public SubAdmin updateSubAdminById(String domain, Long id, SubAdmin newData){
-        SubAdmin old = SArepo.findByIdAndDomain(id, domain);
-        if (old == null) return null;
 
-        old.setName(newData.getName());
-        old.setCourse(newData.getCourse());
-        old.setMobileNumber(newData.getMobileNumber());
-        old.setEmail(newData.getEmail());
-        
-        return SArepo.save(old);
-    }
+    // =========================================================
+// UPDATE SUBADMIN
+// =========================================================
 
-    // UPDATE  + SubAdminId means (subAdminId which provide by University or collage)
-    public SubAdmin updateSubAdminByEmail(String domain, SubAdmin newData){
-        SubAdmin old = SArepo.findBySubAdminIdAndDomain(newData.getSubAdminId(), domain);
-        if (old == null) return null;
+    public SubAdminResponseDTO updateSubAdminByEmail(
+            String domain,
+            SubAdmin newData) {
 
-        if (newData.getName() != null)
+        SubAdmin old = SArepo.findByDomainAndEmail(
+                domain,
+                newData.getEmail()
+        );
+
+        if (old == null) {
+            throw new RuntimeException(
+                    "SubAdmin not found with email: "
+                            + newData.getEmail()
+            );
+        }
+
+        // ---------------------------------------------------------
+        // Basic fields
+        // ---------------------------------------------------------
+
+        if (newData.getName() != null &&
+                !newData.getName().isBlank()) {
+
             old.setName(newData.getName());
+        }
 
-        if (newData.getCourse() != null)
+        if (newData.getSubAdminId() != null &&
+                !newData.getSubAdminId().isBlank()) {
+
+            old.setSubAdminId(newData.getSubAdminId());
+        }
+
+        if (newData.getCourse() != null &&
+                !newData.getCourse().isBlank()) {
+
             old.setCourse(newData.getCourse());
+        }
 
-        if (newData.getMobileNumber() != null)
+        if (newData.getMobileNumber() != null &&
+                !newData.getMobileNumber().isBlank()) {
+
             old.setMobileNumber(newData.getMobileNumber());
-        
-        return SArepo.save(old);
+        }
+
+        // ---------------------------------------------------------
+        // Teaching assignments JSON
+        //
+        // Example:
+        //
+        // {
+        //     "2A": ["JAVA", "DSA"],
+        //     "2B": ["OS"],
+        //     "3A": ["DBMS"]
+        // }
+        // ---------------------------------------------------------
+
+        if (newData.getTeachingAssignmentsJson() != null &&
+                !newData.getTeachingAssignmentsJson().isBlank()) {
+
+            old.setTeachingAssignmentsJson(
+                    newData.getTeachingAssignmentsJson()
+            );
+        }
+
+        // ---------------------------------------------------------
+        // Save
+        // ---------------------------------------------------------
+
+        SubAdmin savedSubAdmin = SArepo.save(old);
+
+        // ---------------------------------------------------------
+        // Convert Entity → DTO
+        // ---------------------------------------------------------
+
+        return modelMapper.map(
+                savedSubAdmin,
+                SubAdminResponseDTO.class
+        );
     }
 
+    // =========================================================
+    // ADD ASSIGNMENT
+    // =========================================================
+
+    public boolean addTeachingAssignment(
+            String domain,
+            String email,
+            String batch,
+            String subject) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        subAdmin.addTeachingAssignment(
+                batch,
+                subject
+        );
+
+        SArepo.save(subAdmin);
+
+        return true;
+    }
+
+
+    // =========================================================
+    // REMOVE ASSIGNMENT
+    // =========================================================
+
+    public boolean removeTeachingAssignment(
+            String domain,
+            String email,
+            String batch,
+            String subject) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        subAdmin.removeTeachingAssignment(
+                batch,
+                subject
+        );
+
+        SArepo.save(subAdmin);
+
+        return true;
+    }
+
+
+    // =========================================================
+    // GET ASSIGNMENTS
+    // =========================================================
+
+    public Map<String, List<String>>
+    getTeachingAssignments(
+            String domain,
+            String email) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        return subAdmin
+                .getTeachingAssignmentsMap();
+    }
+
+
+    // =========================================================
+    // GET FACULTY BY COURSE
+    // =========================================================
+
+    public List<FacultyResponseDTO>
+    getAllFacultyBySubAdminCourse(
+            String domain,
+            String email) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        return facultyService
+                .getAllFacultyBySubAdminCourse(
+                        domain,
+                        subAdmin.getCourse()
+                );
+    }
+
+
+    // =========================================================
+    // GET STUDENTS BY COURSE
+    // =========================================================
+
+    public List<StudentResponseDTO>
+    getStudentBySubAdminCourse(
+            String domain,
+            String email) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        return studentService
+                .getStudentsByCourse(
+                        domain,
+                        subAdmin.getCourse()
+                );
+    }
+
+
+    // =========================================================
+    // GET STUDENTS BY BATCH
+    // =========================================================
+
+    public List<StudentResponseDTO>
+    getStudentsByBatch(
+            String domain,
+            String email,
+            String studyBatch) {
+
+        SubAdmin subAdmin =
+                SArepo.findByEmailAndDomain(
+                        email,
+                        domain
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "SubAdmin not found"
+                        ));
+
+        /*
+         * Optional security:
+         * If SubAdmin has assignment data,
+         * verify the batch.
+         */
+        if (!subAdmin
+                .getTeachingAssignmentsMap()
+                .containsKey(
+                        studyBatch
+                                .trim()
+                                .toUpperCase()
+                )) {
+
+            throw new RuntimeException(
+                    "SubAdmin is not assigned to batch "
+                            + studyBatch
+            );
+        }
+
+        return studentService
+                .getStudentsByTeachingBatch(
+                        domain,
+                        studyBatch
+                );
+    }
+
+
+    // =========================================================
     // DELETE
-    // **** this is for official use only no others  ***** 
-    public String deleteSubAdminbyId(String domain, Long id){
-        SubAdmin sa = SArepo.findByIdAndDomain(id, domain);
-        if (sa == null) return "Not found";
+    // =========================================================
 
-        SArepo.delete(sa);
-        return "SubAdmin deleted: " + id;
-    }
+    public String deleteSubAdminByEmail(
+            String domain,
+            String email) {
 
-    // DELETE
-    public String deleteSubAdminBySubAdminId(String domain, String email){
-        SubAdmin sa = SArepo.findBySubAdminIdAndDomain(email, domain);;
-        if (sa == null) return "Not found";
+        SubAdmin subAdmin =
+                SArepo.findByDomainAndEmail(
+                        domain,
+                        email
+                );
 
-        SArepo.delete(sa);
-        return "Deleted SubAdmin with email id : " + email;
-    }
+        if (subAdmin == null) {
+            return "Not found";
+        }
 
+        SArepo.delete(subAdmin);
 
-
-    // ------ READ ALL faculty for specific university ------
-    public List<FacultyResponseDTO> getAllFacultyBySubAdminCourse(String domain, String email) {
-
-        SubAdmin subAdmin = SArepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Faculty not found"));
-
-        String course = subAdmin.getCourse();
-
-        return facultyRepository.findByCourseAndDomain(course, domain)
-                .stream()
-                .map(faculty -> modelMapper.map(faculty, FacultyResponseDTO.class))
-                .toList();
-    }
-
-    // ------ READ ALL faculty for specific university ------
-    public List<StudentResponseDTO> getStudentBySubAdminCourse(String domain, String email) {
-
-        SubAdmin subAdmin = SArepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Faculty not found"));
-
-        String course = subAdmin.getCourse();
-
-        return studentRepository.findByCourseAndDomain(course, domain)
-                .stream()
-                .map(student -> modelMapper.map(student, StudentResponseDTO.class))
-                .toList();
-    }
-
-    //  READ ONE by domain + DomainId(Did) means (Id which provide by University or collage)
-    public Faculty getFacultyByFacultyId(String domain, String facultyId ) {
-        return facultyService.getFacultyByFacultyId(domain, facultyId);
-    }
-   
-
-
-
-    // ------ READ ALL student for specific university ------
-    public List<StudentResponseDTO> getAllStudents(String domain) {
-        return studentService.getAllStudent(domain);
-    }
-
-    // ------ READ ONE by domain + rollNo ------
-    public Student getStudentByRollNo(String domain, String rollNo) {
-        return studentService.getStudentByRollNo(domain, rollNo);        
-    }
-    
-    // ------ READ ONE by domain + Name ------
-    public List<Student> getStudentByName(String domain, String name) {
-        return studentService.getAllStudentByName(domain, name);        
-    }
-
-    // ------ READ All by domain + Branch ------
-    public List<Student> getStudentByBranch(String domain,String branch) {
-        return studentService.getAllStudentByBranch(domain,branch);
-    }
-
-    // ------ READ All by domain + Course ------
-    public List<Student> getStudentByCourse(String domain,String course) {
-        return studentService.getAllStudentByCourse(domain,course);
-    }
-
-    // ------ READ All by domain + Batch ------
-    public List<Student> getStudentByBatch(String domain, String batch) {
-        return studentService.getAllStudentByBatch(domain, batch);
+        return "Deleted SubAdmin with email id : "
+                + email;
     }
 
 
+    // =========================================================
+    // RESPONSE
+    // =========================================================
 
+    private SubAdminResponseDTO toResponse(
+            SubAdmin subAdmin,
+            Instant lastLogin) {
+
+        SubAdminResponseDTO response =
+                new SubAdminResponseDTO();
+
+        response.setName(
+                subAdmin.getName()
+        );
+
+        response.setEmail(
+                subAdmin.getEmail()
+        );
+
+        response.setMobileNumber(
+                subAdmin.getMobileNumber()
+        );
+
+        response.setProfilePic(
+                subAdmin.getProfilePic()
+        );
+
+        response.setCreatedDateTime(
+                subAdmin.getCreatedDateTime()
+        );
+
+        response.setLastLoginDateTime(
+                lastLogin != null
+                        ? lastLogin
+                        : subAdmin.getLastLoginDateTime()
+        );
+
+        response.setSubAdminId(
+                subAdmin.getSubAdminId()
+        );
+
+        response.setCourse(
+                subAdmin.getCourse()
+        );
+
+        response.setTeachingAssignments(
+                subAdmin.getTeachingAssignmentsMap()
+        );
+
+        if (subAdmin.getUniversity() != null) {
+
+            response.setUniversityName(
+                    subAdmin.getUniversity().getUniversityName()
+            );
+        }
+
+        return response;
+    }
 }
-

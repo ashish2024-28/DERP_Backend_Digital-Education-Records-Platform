@@ -11,20 +11,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class DomainAdminResponseDTO {
 
-    private Long id;
     private String name;
     private String domain;
     private String mobileNumber;
     private String email;
-    private String role;
 
     private Instant createdDateTime;
     private Instant lastLoginDateTime;
-    private String profilePic;
 
+    private String profilePic;// store image path OR base64
 
-    // University details (Flattened or nested)
-    private String universityName;
-    private Long universityId;
 
 }

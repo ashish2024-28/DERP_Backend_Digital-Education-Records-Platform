@@ -1,25 +1,36 @@
 package com.demoproject.DTO.FacultyDTO;
 
-import java.time.Instant;
-
 import lombok.*;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class FacultyResponseDTO {
-    // Fields from BaseUser
+
     private String name;
+
     private String email;
-    private String password;
+
     private String mobileNumber;
 
-    private Instant createdDateTime;
-    private Instant lastLoginDateTime;
-    // Fields specific to Faculty
-    private String facultyId;
-    private String course;
-    private String teachingBatch;
     private String profilePic;
+
+    private Instant createdDateTime;
+
+    private Instant lastLoginDateTime;
+
+    private String facultyId;
+
+    private String course;
+
+    private Map<String, List<String>> teachingAssignments;
+
+    private String universityName;
+
+    private String password; // Used only see by admin
 
 }

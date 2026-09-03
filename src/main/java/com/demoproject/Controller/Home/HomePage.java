@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.demoproject.DTO.ApiResponse;
-import com.demoproject.DTO.University.UniversityDomainAdminDTO;
 import com.demoproject.Service.UniversityService;
 import org.springframework.web.multipart.MultipartFile;
 

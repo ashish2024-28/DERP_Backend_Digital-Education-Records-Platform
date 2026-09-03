@@ -1,22 +1,5 @@
 package com.demoproject.Service;
 
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.demoproject.Entity.DomainAdmin;
-import org.jspecify.annotations.NonNull;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import com.demoproject.DTO.LoginRequestDTO;
 import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
@@ -25,258 +8,711 @@ import com.demoproject.Entity.Student;
 import com.demoproject.Entity.University;
 import com.demoproject.Repository.StudentRepository;
 import com.demoproject.Repository.UniversityRepo;
+
+import lombok.RequiredArgsConstructor;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.List;
+
 @Service
+@RequiredArgsConstructor
 public class StudentService {
 
+    private final StudentRepository studentRepository;
+    private final BaseUserService baseUserService;
+    private final UniversityRepo universityRepo;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private StudentRepository repo;
-    @Autowired
-    private BaseUserService baseUserService;
-    @Autowired
-    private UniversityRepo universityRepo;
-
-    @Autowired
     @Qualifier("bcryptEncoder")
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private ModelMapper modelMapper;
 
-    
-    //  Login by domain + Email + Password
-    // public StudentResponseDTO LoginStudent(LoginRequestDTO loginRequestDTO){
-    //     Student studentLogin = repo.findByEmailAndDomain(loginRequestDTO.getEmail(), loginRequestDTO.getDomain()).orElse(null);
-    //     boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword(),studentLogin.getPassword());
+    // =========================================================
+    // GET LOGGED-IN STUDENT
+    // =========================================================
 
-    //     if (passwordMatch) {
-    //         studentLogin.setLastLoginDateTime(LocalDateTime.now());
-    //         studentLogin =  repo.save(studentLogin);
-    //         return modelMapper.map(studentLogin, StudentResponseDTO.class);
-            
-    //     } else {    return null;    }
-    // }
+    public StudentResponseDTO getStudentByEmailAndDomain(
+            String email,
+            String domain) {
 
-    // login when frontend send jwt token
-    public StudentResponseDTO getStudentByEmailAndDomain(String email, String domain) {
-        Student studentLogin = repo.findByEmailAndDomain(email,domain).orElseThrow();
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                email,
+                                domain
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
 
-        // set lastLoginDateTime
-       Instant lastLogin = studentLogin.getLastLoginDateTime();
+        Instant lastLogin =
+                student.getLastLoginDateTime();
 
-        studentLogin.setLastLoginDateTime(Instant.now());
-        studentLogin =  repo.save(studentLogin);
-        
-        studentLogin.setLastLoginDateTime(lastLogin);
+        student.setLastLoginDateTime(
+                Instant.now()
+        );
 
-        StudentResponseDTO responseDTO = modelMapper.map(studentLogin, StudentResponseDTO.class) ;
-        responseDTO.setLastLoginDateTime(lastLogin);
-        return responseDTO;
-    }
+        studentRepository.save(student);
 
-    public StudentResponseDTO LoginStudent(LoginRequestDTO loginRequestDTO){
-        Student studentLogin = repo.findByEmailAndDomain(loginRequestDTO.getEmail(), loginRequestDTO.getDomain()).orElse(null);
-        boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword(),studentLogin.getPassword());
+        student.setLastLoginDateTime(
+                lastLogin
+        );
 
-        if (passwordMatch) {
-            studentLogin.setLastLoginDateTime(Instant.now());
-            studentLogin =  repo.save(studentLogin);
-            return modelMapper.map(studentLogin, StudentResponseDTO.class);
-            
-        } else {    return null;    }
+        return modelMapper.map(
+                student,
+                StudentResponseDTO.class
+        );
     }
 
 
-    //    updata profile picture
-    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+    // =========================================================
+    // LOGIN
+    // =========================================================
 
-        Student student = repo.findByDomainAndEmail(domain,email);
+    public StudentResponseDTO LoginStudent(
+            LoginRequestDTO loginRequestDTO) {
 
-        String uploadDir = "uploads/profile/";
-        Files.createDirectories(Paths.get(uploadDir));
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                loginRequestDTO.getEmail(),
+                                loginRequestDTO.getDomain()
+                        )
+                        .orElse(null);
 
-        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
-
-        Path path = Paths.get(uploadDir,fileName);
-
-        Files.write(path,file.getBytes());
-
-        student.setProfilePic(uploadDir+fileName);
-
-        repo.save(student);
-
-        return uploadDir+fileName;
-    }
-
-    public boolean  emailVerifiy(String email) {
-        return baseUserService.existsUserByEmail(email);
-    }
-
-        // ---- CREATE ------
-    public String  addStudent(String domain, @NonNull StudentSignupDTO signupStudent) {
-
-        if(baseUserService.existsUserByEmail(signupStudent.getEmail())){
-            throw new RuntimeException("User already exists with this email.");
+        if (student == null) {
+            return null;
         }
 
-        Student save = modelMapper.map(signupStudent, Student.class);
+        boolean passwordMatch =
+                passwordEncoder.matches(
+                        loginRequestDTO.getPassword(),
+                        student.getPassword()
+                );
 
-        University university = universityRepo.findByDomain(domain)
-        .orElseThrow(() -> new RuntimeException("Invalid domain"));
-        save.setDomain(domain);
-        save.setUniversity(university);
+        if (!passwordMatch) {
+            return null;
+        }
 
+        student.setLastLoginDateTime(
+                Instant.now()
+        );
 
-        if( repo.existsByRollNumberAndDomain(save.getRollNumber(),save.getDomain()) ){    throw new RuntimeException("Student's RollNumber field are already exist. ");    }
-        if( repo.existsByDomainAndEmail(save.getDomain(),save.getEmail()) ){    throw new RuntimeException("Student's Email field are already exist. ");    }
-        if( repo.existsByEmail(save.getEmail())){  throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");  }
-        
-        // for security use passwordEncoder
-        save.setPassword(passwordEncoder.encode(save.getPassword()));
+        studentRepository.save(student);
 
-        save.setRole(Role.STUDENT);
-        save = repo.save(save);
-        return save.getName() + ",\nYou Account is Created Successfully.\nRoll Number : " + save.getRollNumber() ;
-
-    }
-
-    public long getStudentCount(String domain) {
-    return repo.countByUniversity_Domain(domain);
+        return modelMapper.map(
+                student,
+                StudentResponseDTO.class
+        );
     }
 
 
-    // ------ READ ALL student for specific university ------
-   
-    public List<StudentResponseDTO> getAllStudent(String domain) {
-        List<Student> studentsList = repo.findAllByDomain(domain);
+    // =========================================================
+    // PROFILE PICTURE
+    // =========================================================
 
-        return studentsList.stream()
-            .map(student -> modelMapper.map(student, StudentResponseDTO.class))
-            .collect(Collectors.toList());
+    public String updateProfilePic(
+            String domain,
+            String email,
+            MultipartFile file)
+            throws IOException {
+
+        Student student =
+                studentRepository
+                        .findByDomainAndEmail(
+                                domain,
+                                email
+                        );
+
+        if (student == null) {
+            throw new RuntimeException(
+                    "Student not found"
+            );
+        }
+
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException(
+                    "Profile picture is required"
+            );
+        }
+
+        String uploadDir =
+                "uploads/profile/";
+
+        Files.createDirectories(
+                Paths.get(uploadDir)
+        );
+
+        String originalName =
+                file.getOriginalFilename();
+
+        String fileName =
+                System.currentTimeMillis()
+                        + "_"
+                        + (originalName == null
+                        ? "profile"
+                        : originalName);
+
+        Path path =
+                Paths.get(
+                        uploadDir,
+                        fileName
+                );
+
+        Files.write(
+                path,
+                file.getBytes()
+        );
+
+        student.setProfilePic(
+                uploadDir + fileName
+        );
+
+        studentRepository.save(student);
+
+        return uploadDir + fileName;
     }
 
-    // READ ONE by domain + id
-    // **** this is for official use only no others  ***** 
-    public Student getById(String domain, Long id) {
-        return repo.findByIdAndDomain(id, domain);
+
+    // =========================================================
+    // EMAIL EXISTS
+    // =========================================================
+
+    public boolean emailVerifiy(
+            String email) {
+
+        return baseUserService
+                .existsUserByEmail(email);
     }
 
-    // ------ READ ONE by domain + rollNo ------
-    public Student getStudentByRollNo(String domain, String rollNumber) {
-        return repo.findByRollNumberAndDomain(rollNumber, domain);        
-    }
-    
-    // ------ READ ONE by domain + Email ------
-    public Student getStudentByEmail(String email, String domain) {
-        
-        Student student  = repo.findByEmailAndDomain(email, domain).orElse(null);        
-        return repo.save(student);
-    }
-    
-    // ------ READ All by domain + Name ------
-    public List<Student> getAllStudentByName(String domain,String name) {
-        return repo.findAllByNameAndDomain(name, domain);
-    }
-    
-    // ------ READ All by domain + Branch ------
-    public List<Student> getAllStudentByBranch(String domain,String branch) {
-        return repo.findAllByBranchAndDomain(branch, domain);
+
+    // =========================================================
+    // CREATE STUDENT
+    // =========================================================
+
+    public String addStudent(
+            String domain,
+            StudentSignupDTO dto) {
+
+        if (dto == null) {
+            throw new RuntimeException(
+                    "Student data is required"
+            );
+        }
+
+        if (baseUserService.existsUserByEmail(
+                dto.getEmail())) {
+
+            throw new RuntimeException(
+                    "User already exists with this email."
+            );
+        }
+
+        University university =
+                universityRepo.findByDomain(domain)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Invalid domain"
+                                )
+                        );
+
+        Student student =
+                modelMapper.map(
+                        dto,
+                        Student.class
+                );
+
+        student.setDomain(domain);
+        student.setUniversity(university);
+        student.setRole(Role.STUDENT);
+
+        /*
+         * Normalize study batch.
+         *
+         * 2a → 2A
+         */
+        if (student.getStudyBatch() != null) {
+
+            student.setStudyBatch(
+                    student.getStudyBatch()
+                            .trim()
+                            .toUpperCase()
+            );
+        }
+
+        /*
+         * If frontend doesn't provide subjects,
+         * store [].
+         */
+        if (student.getStudyBatch() != null) {
+            student.setStudyBatch(
+                    student.getStudyBatch()
+                            .trim()
+                            .toUpperCase()
+            );
+        }
+
+        /*
+         * Password encryption.
+         */
+        student.setPassword(
+                passwordEncoder.encode(
+                        student.getPassword()
+                )
+        );
+
+        if (studentRepository
+                .existsByRollNumberAndDomain(
+                        student.getRollNumber(),
+                        domain)) {
+
+            throw new RuntimeException(
+                    "Student Roll Number already exists."
+            );
+        }
+
+        if (studentRepository
+                .existsByDomainAndEmail(
+                        domain,
+                        student.getEmail())) {
+
+            throw new RuntimeException(
+                    "Student email already exists."
+            );
+        }
+
+        Student saved =
+                studentRepository.save(student);
+
+        return saved.getName()
+                + ",\nYour account was created successfully."
+                + "\nRoll Number : "
+                + saved.getRollNumber();
     }
 
-    // ------ READ All by domain + Course ------
-    public List<Student> getAllStudentByCourse(String domain,String course) {
-        return repo.findAllByCourseAndDomain(course, domain);
+
+    // =========================================================
+    // STUDENT COUNT
+    // =========================================================
+
+    public long getStudentCount(
+            String domain) {
+
+        return studentRepository
+                .countByUniversity_Domain(domain);
     }
 
-    // ------ READ All by domain + Batch ------
-    public List<Student> getAllStudentByBatch(String domain,String batch) {
-        return repo.findAllByBatchAndDomain(batch, domain);
+
+    // =========================================================
+    // ALL STUDENTS
+    // =========================================================
+
+    public List<StudentResponseDTO>
+    getAllStudent(String domain) {
+
+        return studentRepository
+                .findAllByDomain(domain)
+                .stream()
+                .map(student ->
+                        modelMapper.map(
+                                student,
+                                StudentResponseDTO.class
+                        )
+                )
+                .toList();
     }
 
-    // Update Password or Forget Password
-     public boolean updatePasswordByEmail(String domain, String email, String newPass ) {
-        Student old = repo.findByEmailAndDomain(email, domain).orElse(null);
-        if (old == null) return false;
 
-        old.setPassword(passwordEncoder.encode(newPass));
-        repo.save(old);
+    // =========================================================
+    // UPDATE PASSWORD
+    // =========================================================
+
+    public boolean updatePasswordByEmail(
+            String domain,
+            String email,
+            String newPass) {
+
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                email,
+                                domain
+                        )
+                        .orElse(null);
+
+        if (student == null) {
+            return false;
+        }
+
+        student.setPassword(
+                passwordEncoder.encode(newPass)
+        );
+
+        studentRepository.save(student);
+
         return true;
     }
 
-    // ------ UPDATE by id ------
-    // **** this is for official use only no others  ***** 
-    public Student updateStudentById(String domain, Long id, Student s) {
-        Student old = repo.findByIdAndDomain(id, domain);
-        if (old == null) return null;
 
-        old.setName(s.getName());
-        old.setBranch(s.getBranch());
-        old.setCourse(s.getCourse());
-        old.setBatch(s.getBatch());
-        old.setMobileNumber(s.getMobileNumber());
-        old.setFatherName(s.getFatherName());
-        old.setFatherMobNo(s.getFatherMobNo());
+    // =========================================================
+    // UPDATE STUDENT
+    // =========================================================
 
-        return repo.save(old);
-    }
+    public boolean updateStudentByEmail(
+            String domain,
+            Student newData) {
 
+        if (newData == null ||
+                newData.getEmail() == null) {
 
-    // ------ UPDATE  by Email ------
-    public Boolean updateStudentByEmail(String domain, Student newData) {
+            return false;
+        }
 
-        Student old = repo.findByEmailAndDomain(newData.getEmail(), domain).orElse(null);
+        Student old =
+                studentRepository
+                        .findByEmailAndDomain(
+                                newData.getEmail(),
+                                domain
+                        )
+                        .orElse(null);
 
-        if (old == null) return false;
+        if (old == null) {
+            return false;
+        }
 
-        if (newData.getName() != null)
-            old.setName(newData.getName());
+        if (newData.getName() != null) {
+            old.setName(
+                    newData.getName()
+            );
+        }
 
-        if (newData.getBranch() != null)
-            old.setBranch(newData.getBranch());
+        if (newData.getRollNumber() != null) {
+            old.setRollNumber(
+                    newData.getRollNumber()
+            );
+        }
 
-        if (newData.getCourse() != null)
-            old.setCourse(newData.getCourse());
+        if (newData.getBranch() != null) {
+            old.setBranch(
+                    newData.getBranch()
+            );
+        }
 
-        if (newData.getBatch() != null)
-            old.setBatch(newData.getBatch());
+        if (newData.getCourse() != null) {
+            old.setCourse(
+                    newData.getCourse()
+            );
+        }
 
-        if (newData.getMobileNumber() != null)
-            old.setMobileNumber(newData.getMobileNumber());
+        if (newData.getBatch() != null) {
+            old.setBatch(
+                    newData.getBatch()
+            );
+        }
 
-        if (newData.getFatherName() != null)
-            old.setFatherName(newData.getFatherName());
+        if (newData.getStudyBatch() != null) {
 
-        if (newData.getFatherMobNo() != null)
-            old.setFatherMobNo(newData.getFatherMobNo());
+            old.setStudyBatch(
+                    newData.getStudyBatch()
+                            .trim()
+                            .toUpperCase()
+            );
+        }
 
-        repo.save(old);
+        if (newData.getStudySubjects() != null) {
+            old.setStudySubjectsList(
+                    newData.getStudySubjects()
+            );
+        }
+
+        if (newData.getMobileNumber() != null) {
+
+            old.setMobileNumber(
+                    newData.getMobileNumber()
+            );
+        }
+
+        if (newData.getFatherName() != null) {
+
+            old.setFatherName(
+                    newData.getFatherName()
+            );
+        }
+
+        if (newData.getFatherMobNo() != null) {
+
+            old.setFatherMobNo(
+                    newData.getFatherMobNo()
+            );
+        }
+
+        studentRepository.save(old);
 
         return true;
     }
 
-    // ------ DELETE by id ------
-    // **** this is for official use only no others  ***** 
-    public String deleteStudentbyId(String domain, Long id) {
-        Student s = repo.findByIdAndDomain(id, domain);
-        if (s == null) return "Invalid student";
-        
-        repo.delete(s);
-        return "Deleted student with id " + id;
+
+    // =========================================================
+    // UPDATE STUDENT SUBJECTS
+    // =========================================================
+
+    public boolean updateStudySubjects(
+            String domain,
+            String email,
+            List<String> subjects) {
+
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                email,
+                                domain
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
+
+        student.setStudySubjectsList(
+                subjects
+        );
+
+        studentRepository.save(student);
+
+        return true;
     }
 
-    // ------ DELETE By RollNo ------
-    public String deleteStudentByEmail(String domain, String email) {
-        Student s = repo.findByEmailAndDomain(email, domain).orElse(null);
-        if (s == null) return "Invalid student";
-        String rollno = s.getRollNumber();
-        repo.delete(s);
-        return "Deleted student with RollNo " + rollno;
+
+    // =========================================================
+    // ADD STUDENT SUBJECT
+    // =========================================================
+
+    public boolean addStudySubject(
+            String domain,
+            String email,
+            String subjectCode) {
+
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                email,
+                                domain
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
+
+        student.addStudySubject(
+                subjectCode
+        );
+
+        studentRepository.save(student);
+
+        return true;
     }
 
 
-  
+    // =========================================================
+    // REMOVE STUDENT SUBJECT
+    // =========================================================
 
+    public boolean removeStudySubject(
+            String domain,
+            String email,
+            String subjectCode) {
+
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                email,
+                                domain
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
+
+        student.removeStudySubject(
+                subjectCode
+        );
+
+        studentRepository.save(student);
+
+        return true;
+    }
+
+
+    // =========================================================
+    // DELETE STUDENT
+    // =========================================================
+
+    public String deleteStudentByEmail(
+            String domain,
+            String email) {
+
+        Student student =
+                studentRepository
+                        .findByEmailAndDomain(
+                                domain,
+                                email
+                        )
+                        .orElse(null);
+
+        if (student == null) {
+            return "Invalid student";
+        }
+
+        String rollNumber =
+                student.getRollNumber();
+
+        studentRepository.delete(student);
+
+        return "Deleted student with Roll Number "
+                + rollNumber;
+    }
+
+
+    // =========================================================
+    // GET STUDENTS BY COURSE
+    // =========================================================
+
+    public List<StudentResponseDTO>
+    getStudentsByCourse(
+            String domain,
+            String course) {
+
+        return studentRepository
+                .findByCourseAndDomain(
+                        course,
+                        domain
+                )
+                .stream()
+                .map(student ->
+                        modelMapper.map(
+                                student,
+                                StudentResponseDTO.class
+                        )
+                )
+                .toList();
+    }
+
+
+    // =========================================================
+    // GET STUDENTS BY STUDY BATCH
+    // =========================================================
+
+    public List<StudentResponseDTO>
+    getStudentsByTeachingBatch(
+            String domain,
+            String studyBatch) {
+
+        String normalizedBatch =
+                studyBatch
+                        .trim()
+                        .toUpperCase();
+
+        return studentRepository
+                .findByStudyBatchAndDomain(
+                        normalizedBatch,
+                        domain
+                )
+                .stream()
+                .map(student ->
+                        modelMapper.map(
+                                student,
+                                StudentResponseDTO.class
+                        )
+                )
+                .toList();
+    }
+
+    // =========================================================
+    // PRIVATE RESPONSE MAPPER
+    // =========================================================
+
+    private StudentResponseDTO toResponse(
+            Student student,
+            Instant lastLogin) {
+
+        StudentResponseDTO response =
+                new StudentResponseDTO();
+
+        response.setName(student.getName());
+
+        response.setEmail(student.getEmail());
+
+        response.setMobileNumber(
+                student.getMobileNumber()
+        );
+
+        response.setCreatedDateTime(
+                student.getCreatedDateTime()
+        );
+
+        response.setLastLoginDateTime(
+                lastLogin != null
+                        ? lastLogin
+                        : student.getLastLoginDateTime()
+        );
+
+        response.setProfilePic(
+                student.getProfilePic()
+        );
+
+        response.setRollNumber(
+                student.getRollNumber()
+        );
+
+        response.setCourse(
+                student.getCourse()
+        );
+
+        response.setBranch(
+                student.getBranch()
+        );
+
+        response.setBatch(
+                student.getBatch()
+        );
+
+        response.setStudyBatch(
+                student.getStudyBatch()
+        );
+
+        response.setStudySubjects(
+                student.getStudySubjectsList()
+        );
+
+        response.setFatherName(
+                student.getFatherName()
+        );
+
+        response.setFatherMobNo(
+                student.getFatherMobNo()
+        );
+
+        if (student.getUniversity() != null) {
+            response.setUniversityName(
+                    student.getUniversity().getUniversityName()
+            );
+        }
+
+        return response;
+    }
 
 }

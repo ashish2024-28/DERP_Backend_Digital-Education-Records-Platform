@@ -112,7 +112,7 @@ public class StudenController {
 
     // ------ UPDATE  profile ------
     @PutMapping("/update_profile")
-    public ResponseEntity<?> updateStudentByRollNO(@PathVariable String domain, @RequestBody Student s) {
+    public ResponseEntity<?> updateStudentByEmail(@PathVariable String domain, @RequestBody Student s) {
         try {
 
             boolean save = studentService.updateStudentByEmail(domain, s);

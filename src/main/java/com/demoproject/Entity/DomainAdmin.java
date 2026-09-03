@@ -22,17 +22,6 @@ uniqueConstraints = {
 @Setter
 public class DomainAdmin extends BaseUser {
 
-    // @Column(nullable = false)
-    // private String domain;
-
-    // @Column(nullable = false)
-    // private String name;
-    
-    // @Column(nullable = false)
-    // private String mobileNumber;
-
-
-    
 
     @OneToOne
     @JoinColumn(name = "university_id", nullable = false)

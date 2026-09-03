@@ -14,53 +14,99 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     Optional<Student> findByEmail(String email);
 
-
-    // find by domain
-    // ------ READ ALL student for specific university ------
+    // READ ALL students for specific university
     List<Student> findAllByDomain(String domain);
 
-    // find by domain + id   or  READ ONE by domain + id
-    // **** this is for official use only no others  ***** 
+    // READ ONE by id + domain
     Student findByIdAndDomain(Long id, String domain);
 
-    // find By RollNo + domain
-    Student findByRollNumberAndDomain(String rollNumber, String domain);
-    
-    // find By  Gmail  + domain
-    Optional<Student> findByEmailAndDomain(String email, String domain);
-    Student findByDomainAndEmail(String domain, String email);
+    // Roll number + domain
+    Optional<Student> findByRollNumberAndDomain(
+            String rollNumber,
+            String domain
+    );
 
-    // find By  Gmail  + Password
-    Student findByEmailAndPassword(String email, String domain);
+    // Email + domain
+    Optional<Student> findByEmailAndDomain(
+            String email,
+            String domain
+    );
 
-    // find By Name + domain
-    List<Student> findAllByNameAndDomain(String name, String domain);
+    Student findByDomainAndEmail(
+            String domain,
+            String email
+    );
 
-    // find By Branch + domain
-    List<Student> findAllByBranchAndDomain(String branch, String domain);
-    
-    // find By Course + domain
-    List<Student> findAllByCourseAndDomain(String course, String domain);
-    
-    // find By Batch + domain
-    List<Student> findAllByBatchAndDomain( String batch, String domain);
+    // Email + password
+    Student findByEmailAndPassword(
+            String email,
+            String password
+    );
 
+    // Name + domain
+    List<Student> findAllByNameAndDomain(
+            String name,
+            String domain
+    );
 
-    
-    // check exist or not
-    boolean existsByEmail(String gmail);
-    boolean existsByRollNumberAndDomain(String rollNumber, String domain);
-    boolean existsByDomainAndEmail(String domain, String gmail);
+    // Branch + domain
+    List<Student> findAllByBranchAndDomain(
+            String branch,
+            String domain
+    );
 
-    
-    // count 
+    // Course + domain
+    List<Student> findAllByCourseAndDomain(
+            String course,
+            String domain
+    );
+
+    // Batch + domain
+    List<Student> findAllByBatchAndDomain(
+            String batch,
+            String domain
+    );
+
+    // Check existence
+    boolean existsByEmail(String email);
+
+    boolean existsByRollNumberAndDomain(
+            String rollNumber,
+            String domain
+    );
+
+    boolean existsByDomainAndEmail(
+            String domain,
+            String email
+    );
+
+    // Count
     long countByUniversity(University university);
+
     long countByUniversity_Domain(String domain);
 
+    // Faculty service calls
+    List<Student> findByCourseAndDomain(
+            String course,
+            String domain
+    );
 
+    // Study batch
+    List<Student> findByStudyBatchAndDomain(
+            String studyBatch,
+            String domain
+    );
 
-//    faculty service call
-     List<Student> findByCourseAndDomain(String course, String domain);
+    // Study batch + roll number ordering
+    List<Student> findByDomainAndStudyBatchOrderByRollNumberAsc(
+            String domain,
+            String studyBatch
+    );
 
+    // All students ordered by roll number
+    List<Student> findByDomainOrderByRollNumberAsc(
+            String domain
+    );
 
+    boolean existsByEmailIgnoreCase(String email);
 }

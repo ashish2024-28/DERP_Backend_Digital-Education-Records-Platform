@@ -71,7 +71,7 @@ public class FacultyController {
 
     // Update Password or Forget Password
     @PutMapping("/update_faculty_password")
-    public ResponseEntity<?> updateStudentPassword(@PathVariable String domain,  @RequestParam String newpass,
+    public ResponseEntity<?> updateFacultyPassword(@PathVariable String domain,  @RequestParam String newpass,
                                                    Authentication authentication){
         try {
             String email = authentication.getName();
@@ -106,9 +106,9 @@ public class FacultyController {
 
     // ------ UPDATE by facultyid  ------
     @PutMapping("/update_profile")
-    public ResponseEntity<?> updateFacultyByDid(@PathVariable String domain, @RequestBody Faculty faculty) {
+    public ResponseEntity<?> updateFacultyByEmail(@PathVariable String domain, @RequestBody Faculty faculty) {
         try {
-            boolean get = fService.updateFacultyByFacultyEmail(domain, faculty);
+            boolean get = fService.updateFacultyByEmail(domain, faculty);
             return new ResponseEntity<>(get,HttpStatus.OK);
             
         } catch (Exception e) {
@@ -117,10 +117,10 @@ public class FacultyController {
         
     }
 
-    // ------ DELETE by facultyid ------
+    // ------ DELETE by facultyEmail ------
 
     @DeleteMapping("/delete_account")
-    public String deleteFacultyByDId(@PathVariable String domain,
+    public String deleteFacultyByEmail(@PathVariable String domain,
         Authentication authentication) {
 
         String email = authentication.getName();

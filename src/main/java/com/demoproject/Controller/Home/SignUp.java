@@ -9,7 +9,6 @@ import com.demoproject.DTO.ApiResponse;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
-import com.demoproject.DTO.University.UniversityNameDomainLogoPathDTO;
 import com.demoproject.Service.FacultyService;
 import com.demoproject.Service.StudentService;
 import com.demoproject.Service.SubAdminService;

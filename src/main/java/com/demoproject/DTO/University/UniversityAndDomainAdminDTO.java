@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UniversityDomainAdminDTO {
+public class UniversityAndDomainAdminDTO {
 
     private University university;
 

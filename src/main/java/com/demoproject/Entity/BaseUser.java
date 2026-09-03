@@ -22,7 +22,7 @@ public abstract class BaseUser {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false , unique = true)
     private String mobileNumber; //Country code +91
 
     @Column(nullable = false, unique = true)
@@ -38,7 +38,19 @@ public abstract class BaseUser {
     private Instant createdDateTime = Instant.now();
     private Instant lastLoginDateTime; // For login purposes
 
+
     private String profilePic;
+
+
+    @PrePersist
+    public void prePersist(){
+        createdDateTime = Instant.now();
+        lastLoginDateTime = Instant.now();
+    }
+    @PreUpdate
+    public void preUpdata(){
+        lastLoginDateTime = Instant.now();
+    }
 
     
 }

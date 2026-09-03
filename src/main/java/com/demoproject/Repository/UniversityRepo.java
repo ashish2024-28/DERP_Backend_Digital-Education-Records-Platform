@@ -16,7 +16,7 @@ public interface UniversityRepo extends JpaRepository<University,Long> {
     // University findByDomain(String domain);
     
     Optional<University> findByDomain(String domain);
-    // University findByDomain(String domain);
+//     University findByDomain(String domain);
     
     Optional<University> findByDomainAndId(String domain, Long id);
     
@@ -31,5 +31,6 @@ public interface UniversityRepo extends JpaRepository<University,Long> {
 
     boolean existsByMobileNumber(String mobileNumber);
 
-  
+
+    University findByDomainAndEmail(String domain, String email);
 }
