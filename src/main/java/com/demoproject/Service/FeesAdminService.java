@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,7 @@ public class FeesAdminService {
         boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword() ,feesAdminLogin.getPassword());
 
         if (passwordMatch) {
-            feesAdminLogin.setLastLoginDateTime(Instant.now());
+            feesAdminLogin.setLastLoginDateTime(LocalDateTime.now());
             return feesAdminRepository.save(feesAdminLogin);
             
         } else {     return null;    }
@@ -57,9 +58,9 @@ public class FeesAdminService {
         FeesAdmin feesAdminLogin = feesAdminRepository.findByEmailAndDomain(email,domain).orElseThrow();
 
         // set lastLoginDateTime
-        Instant lastLogin = feesAdminLogin.getLastLoginDateTime();
+        LocalDateTime lastLogin = feesAdminLogin.getLastLoginDateTime();
 
-        feesAdminLogin.setLastLoginDateTime(Instant.now());
+        feesAdminLogin.setLastLoginDateTime(LocalDateTime.now());
         feesAdminLogin =  feesAdminRepository.save(feesAdminLogin);
 
         feesAdminLogin.setLastLoginDateTime(lastLogin);

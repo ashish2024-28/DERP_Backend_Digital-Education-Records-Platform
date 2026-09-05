@@ -2,6 +2,7 @@ package com.demoproject.Service;
 
 
 
+import com.demoproject.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -11,11 +12,6 @@ import org.springframework.stereotype.Service;
 import com.demoproject.DTO.LoginRequestDTO;
 import com.demoproject.DTO.LoginResponseDTO;
 import com.demoproject.Entity.BaseUser;
-import com.demoproject.Repository.DomainAdminRepository;
-import com.demoproject.Repository.FacultyRepository;
-import com.demoproject.Repository.StudentRepository;
-import com.demoproject.Repository.SubAdminRepository;
-import com.demoproject.Repository.UniversityRepo;
 import com.demoproject.Security.JWTService;
 
 @Service
@@ -64,6 +60,8 @@ public class BaseUserService {
     private SubAdminRepository subAdminRepo;
     @Autowired
     private DomainAdminRepository domainAdminRepo;
+    @Autowired
+    private FeesAdminRepository feesAdminRepository;
     @Autowired
     private UniversityRepo universityRepo;
 
@@ -117,6 +115,10 @@ public class BaseUserService {
         if (user == null)
             user = domainAdminRepo.findByEmailAndDomain(email, domain).orElse(null);
 
+        if (user == null)
+            user = feesAdminRepository.findByEmailAndDomain(email, domain).orElse(null);
+
+
         return user;
         // return new LoginResponseDTO(token, user.getRole());
     }
@@ -137,7 +139,11 @@ public class BaseUserService {
             userExist = domainAdminRepo.existsByEmail(email);
         
         if (!userExist)
+            userExist = feesAdminRepository.existsByEmail(email);
+
+        if (!userExist)
             userExist = universityRepo.existsByEmail(email);
+
 
         return userExist;
 

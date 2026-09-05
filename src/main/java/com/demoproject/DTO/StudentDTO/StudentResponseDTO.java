@@ -3,6 +3,7 @@ package com.demoproject.DTO.StudentDTO;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -16,9 +17,11 @@ public class StudentResponseDTO {
 
     private String mobileNumber;
 
-    private Instant createdDateTime;
+    private LocalDateTime createdDateTime;
 
-    private Instant lastLoginDateTime;
+    private LocalDateTime lastUpdateDateTime;
+
+    private LocalDateTime lastLoginDateTime;
 
     private String profilePic;
 
@@ -33,7 +36,7 @@ public class StudentResponseDTO {
 
     private String studyBatch;
 
-    private List<String> studySubjects;
+    private String studySubjects;
 
     private String fatherName;
 
@@ -41,6 +44,5 @@ public class StudentResponseDTO {
 
     private String universityName;
 
-    private String password;
 
 }

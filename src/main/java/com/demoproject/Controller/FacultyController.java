@@ -108,7 +108,7 @@ public class FacultyController {
     @PutMapping("/update_profile")
     public ResponseEntity<?> updateFacultyByEmail(@PathVariable String domain, @RequestBody Faculty faculty) {
         try {
-            boolean get = fService.updateFacultyByEmail(domain, faculty);
+            boolean get = fService.updateFacultyByFacultyEmail(domain, faculty);
             return new ResponseEntity<>(get,HttpStatus.OK);
             
         } catch (Exception e) {

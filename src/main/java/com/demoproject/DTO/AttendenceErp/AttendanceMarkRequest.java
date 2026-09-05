@@ -25,6 +25,7 @@ public record AttendanceMarkRequest(
         String academicSession,
 
         @NotEmpty
-        Map<Long, String> attendance
+        Map<String, String> attendance
+
 ) {
 }

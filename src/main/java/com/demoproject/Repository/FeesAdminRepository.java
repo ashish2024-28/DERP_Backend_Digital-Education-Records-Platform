@@ -24,6 +24,7 @@ public interface FeesAdminRepository extends JpaRepository<FeesAdmin, Long> {
     FeesAdmin findByFeesAdminIdAndDomain(String subAdminId, String domain);
 
     Optional<FeesAdmin> findByEmailAndDomain(String email, String domain);
+
     FeesAdmin findByDomainAndEmail(String domain, String email);
 
     FeesAdmin findByEmailAndPassword(String email, String password);

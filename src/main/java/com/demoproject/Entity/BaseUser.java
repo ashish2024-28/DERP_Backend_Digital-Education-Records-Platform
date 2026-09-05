@@ -1,8 +1,10 @@
 package com.demoproject.Entity;
 
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
+import com.demoproject.annotation.LowerCase;
+import com.demoproject.annotation.TitleCase;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
@@ -17,15 +19,18 @@ public abstract class BaseUser {
     private Long id;
 
     @Column(nullable = false)
+    @LowerCase
     private String domain; // domain => university/collage ka unique name(like Haridwar University HU,hu,Hu)
 
     @Column(nullable = false)
+    @TitleCase
     private String name;
 
     @Column(nullable = false , unique = true)
     private String mobileNumber; //Country code +91
 
     @Column(nullable = false, unique = true)
+    @LowerCase
     private String email;
 
     @Column(nullable = false)
@@ -35,8 +40,9 @@ public abstract class BaseUser {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private Instant createdDateTime = Instant.now();
-    private Instant lastLoginDateTime; // For login purposes
+    private LocalDateTime createdDateTime = LocalDateTime.now();
+    private LocalDateTime lastUpdateDateTime;
+    private LocalDateTime lastLoginDateTime; // For login purposes
 
 
     private String profilePic;
@@ -44,12 +50,12 @@ public abstract class BaseUser {
 
     @PrePersist
     public void prePersist(){
-        createdDateTime = Instant.now();
-        lastLoginDateTime = Instant.now();
+        createdDateTime = LocalDateTime.now();
+        lastUpdateDateTime = LocalDateTime.now();
     }
     @PreUpdate
     public void preUpdata(){
-        lastLoginDateTime = Instant.now();
+        lastUpdateDateTime = LocalDateTime.now();
     }
 
     

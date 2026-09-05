@@ -1,6 +1,8 @@
 package com.demoproject.Entity;
 
 import com.demoproject.Entity.ProfileInformation.StudentInfo.Certifications;
+import com.demoproject.annotation.TitleCase;
+import com.demoproject.annotation.UpperCase;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
@@ -56,6 +58,7 @@ public class Student extends BaseUser {
      * B.Pharma
      */
     @Column(nullable = false)
+    @UpperCase
     private String course;
 
 
@@ -67,7 +70,7 @@ public class Student extends BaseUser {
      * ECE
      * Mechanical
      */
-    @Column(length = 50)
+    @UpperCase
     private String branch;
 
 
@@ -92,6 +95,7 @@ public class Student extends BaseUser {
      * 4C
      */
     @Column(nullable = false, length = 20)
+    @UpperCase
     private String studyBatch;
 
 
@@ -117,18 +121,18 @@ public class Student extends BaseUser {
      *          ↓
      * PostgreSQL JSON
      */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(
-            name = "study_subjects",
-            columnDefinition = "json"
+    @Column(name = "study_subjects",
+            nullable = false
     )
-    private List<String> studySubjects = new ArrayList<>();
+    @UpperCase
+    private String studySubjects;
 
 
     /*
      * Student's father name.
      */
     @Column(nullable = false)
+    @TitleCase
     private String fatherName;
 
 
@@ -156,282 +160,8 @@ public class Student extends BaseUser {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private List<Certifications> certifications =
-            new ArrayList<>();
+    private List<Certifications> certifications = new ArrayList<>();
 
 
-    // =========================================================
-    // SUBJECT HELPER METHODS
-    // =========================================================
 
-    /**
-     * Get student subjects safely.
-     *
-     * Example:
-     *
-     * ["JAVA", "DSA", "OS"]
-     */
-    public List<String> getStudySubjectsList() {
-
-        if (studySubjects == null) {
-            return new ArrayList<>();
-        }
-
-        return new ArrayList<>(studySubjects);
-    }
-
-
-    /**
-     * Replace all student subjects.
-     *
-     * Example:
-     *
-     * setStudySubjectsList(
-     *     List.of("JAVA", "DSA", "OS")
-     * );
-     */
-    public void setStudySubjectsList(
-            List<String> subjects) {
-
-        if (subjects == null) {
-            this.studySubjects =
-                    new ArrayList<>();
-
-            return;
-        }
-
-        List<String> normalizedSubjects =
-                subjects.stream()
-                        .filter(subject ->
-                                subject != null &&
-                                        !subject.isBlank()
-                        )
-                        .map(String::trim)
-                        .map(String::toUpperCase)
-                        .distinct()
-                        .toList();
-
-        this.studySubjects =
-                new ArrayList<>(normalizedSubjects);
-    }
-
-
-    /**
-     * Add one subject.
-     *
-     * Example:
-     *
-     * student.addStudySubject("JAVA");
-     */
-    public void addStudySubject(
-            String subjectCode) {
-
-        if (subjectCode == null ||
-                subjectCode.isBlank()) {
-
-            return;
-        }
-
-        if (this.studySubjects == null) {
-            this.studySubjects =
-                    new ArrayList<>();
-        }
-
-        String normalizedSubject =
-                subjectCode
-                        .trim()
-                        .toUpperCase();
-
-        boolean alreadyExists =
-                this.studySubjects.stream()
-                        .anyMatch(subject ->
-                                subject != null &&
-                                        subject.equalsIgnoreCase(
-                                                normalizedSubject
-                                        ));
-
-        if (!alreadyExists) {
-            this.studySubjects.add(
-                    normalizedSubject
-            );
-        }
-    }
-
-
-    /**
-     * Remove one subject.
-     *
-     * Example:
-     *
-     * student.removeStudySubject("JAVA");
-     */
-    public void removeStudySubject(
-            String subjectCode) {
-
-        if (subjectCode == null ||
-                subjectCode.isBlank() ||
-                this.studySubjects == null) {
-
-            return;
-        }
-
-        String normalizedSubject =
-                subjectCode.trim();
-
-        this.studySubjects.removeIf(
-                subject ->
-                        subject != null &&
-                                subject.equalsIgnoreCase(
-                                        normalizedSubject
-                                )
-        );
-    }
-
-
-    /**
-     * Check whether student studies
-     * a particular subject.
-     */
-    public boolean studiesSubject(
-            String subjectCode) {
-
-        if (subjectCode == null ||
-                subjectCode.isBlank() ||
-                this.studySubjects == null) {
-
-            return false;
-        }
-
-        String normalizedSubject =
-                subjectCode.trim();
-
-        return this.studySubjects.stream()
-                .anyMatch(subject ->
-                        subject != null &&
-                                subject.equalsIgnoreCase(
-                                        normalizedSubject
-                                ));
-    }
-
-
-    /**
-     * Clear all subjects.
-     */
-    public void clearStudySubjects() {
-
-        this.studySubjects =
-                new ArrayList<>();
-    }
-
-
-    // =========================================================
-    // BATCH HELPER METHODS
-    // =========================================================
-
-    /**
-     * Set study batch safely.
-     *
-     * Example:
-     *
-     * 2a -> 2A
-     */
-    public void setStudyBatch(
-            String studyBatch) {
-
-        if (studyBatch == null ||
-                studyBatch.isBlank()) {
-
-            this.studyBatch =
-                    studyBatch;
-
-            return;
-        }
-
-        this.studyBatch =
-                studyBatch
-                        .trim()
-                        .toUpperCase();
-    }
-
-
-    /**
-     * Check whether student belongs
-     * to a particular study batch.
-     */
-    public boolean isInStudyBatch(
-            String studyBatch) {
-
-        if (this.studyBatch == null ||
-                studyBatch == null) {
-
-            return false;
-        }
-
-        return this.studyBatch.equalsIgnoreCase(
-                studyBatch.trim()
-        );
-    }
 }
-
-
-/*
-Why this fixes your error
-
-Previously you had:
-
-@JdbcTypeCode(SqlTypes.JSON)
-@Column(name = "study_subjects", columnDefinition = "json")
-private List<String> studySubjects;
-
-which is actually the right mapping.
-
-But your helper methods were still trying to use an old field:
-
-studySubjectsJson
-
-The corrected entity has one source of truth:
-
-private List<String> studySubjects;
-
-and Hibernate handles the JSON conversion.
-
-Your Excel flow:
-
-Excel
-  ↓
-"JAVA,DSA,OS,DBMS"
-  ↓
-List<String>
-  ↓
-["JAVA","DSA","OS","DBMS"]
-  ↓
-Hibernate @JdbcTypeCode(SqlTypes.JSON)
-  ↓
-PostgreSQL json
-
-So PostgreSQL receives JSON rather than a VARCHAR.
-
-One more important thing
-
-Your database column is currently:
-
-study_subjects json
-
-Keep it as json with the entity above.
-
-You do not need to manually do:
-
-ObjectMapper.writeValueAsString(...)
-
-and you should remove these imports from Student.java:
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-The Excel upload code you showed earlier can remain as it is:
-
-student.setStudySubjects(subjects);
-
-That is now exactly what the entity expects.
-* */

@@ -34,10 +34,6 @@ public class GetAllSubAdmin {
 
         List<SubAdminResponseDTO> subAdmin = subAdminService.getAllSubAdmin(domain);
 
-        if(!role.contains("DOMAIN_ADMIN")){
-            subAdmin.forEach(s -> s.setPassword(null));
-        }
-
         return subAdmin;
     }
 

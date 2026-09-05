@@ -1,18 +1,17 @@
 package com.demoproject.Security;
 
+import com.demoproject.Repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.demoproject.Entity.BaseUser;
-import com.demoproject.Repository.DomainAdminRepository;
-import com.demoproject.Repository.FacultyRepository;
-import com.demoproject.Repository.StudentRepository;
-import com.demoproject.Repository.SubAdminRepository;
 
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService{
 // NOTE: CustomUserDetailsService → talks ONLY to repositories
         // BaseUserService → uses AuthenticationManager
@@ -22,18 +21,7 @@ public class CustomUserDetailsService implements UserDetailsService{
     private final FacultyRepository facultyRepo;
     private final SubAdminRepository subAdminRepo;
     private final DomainAdminRepository domainAdminRepo;
-
-    public CustomUserDetailsService(
-        StudentRepository studentRepo,
-        FacultyRepository facultyRepo,
-        SubAdminRepository subAdminRepo,
-        DomainAdminRepository domainAdminRepo
-     ) {
-        this.studentRepo = studentRepo;
-        this.facultyRepo = facultyRepo;
-        this.subAdminRepo = subAdminRepo;
-        this.domainAdminRepo = domainAdminRepo;
-    }
+    private final FeesAdminRepository feesAdminRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email)
@@ -47,6 +35,9 @@ public class CustomUserDetailsService implements UserDetailsService{
 
         if (user == null)
             user = subAdminRepo.findByEmail(email).orElse(null);
+
+        if (user == null)
+            user = feesAdminRepository.findByEmail(email).orElse(null);
 
         if (user == null)
             user = domainAdminRepo.findByEmail(email).orElseThrow(

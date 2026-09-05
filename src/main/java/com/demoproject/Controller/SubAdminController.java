@@ -110,7 +110,7 @@ public class SubAdminController {
 
     // ------ UPDATE SubAdmin Profile by Email  ------
     @PutMapping("/update_profile")
-    public SubAdminResponseDTO updateSubAdminByDomainEmail(@PathVariable String domain, @RequestBody SubAdmin email) {
+    public Boolean updateSubAdminByDomainEmail(@PathVariable String domain, @RequestBody SubAdmin email) {
         return sAService. updateSubAdminByEmail(domain, email);
     }
 

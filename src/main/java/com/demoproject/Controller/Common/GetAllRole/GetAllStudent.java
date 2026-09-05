@@ -31,10 +31,6 @@ public class GetAllStudent {
 
         List<StudentResponseDTO> students = studentService.getAllStudent(domain);
 
-        if(!role.contains("DOMAIN_ADMIN")){
-            students.forEach(s -> s.setPassword(null));
-        }
-
         return students;
     }
 

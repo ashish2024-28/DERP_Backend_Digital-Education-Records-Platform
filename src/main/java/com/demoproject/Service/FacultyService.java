@@ -1,693 +1,239 @@
 package com.demoproject.Service;
 
-import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
-import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
-import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
-import com.demoproject.Entity.Faculty;
-import com.demoproject.Entity.Role;
-import com.demoproject.Entity.University;
-import com.demoproject.Repository.FacultyRepository;
-import com.demoproject.Repository.UniversityRepo;
-
-import jakarta.validation.constraints.NotNull;
-
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.demoproject.Entity.*;
+import com.demoproject.Repository.StudentRepository;
+import org.jspecify.annotations.NonNull;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
+import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
+import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
+import com.demoproject.Repository.FacultyRepository;
+import com.demoproject.Repository.UniversityRepo;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 public class FacultyService {
 
-    private final FacultyRepository frepo;
 
-    private final StudentService studentService;
-
-    private final UniversityRepo universityRepo;
-
-    private final BaseUserService baseUserService;
-
+    @Autowired
+    private StudentRepository studentRepository;
+    @Autowired
+    private StudentService studentService;
+    @Autowired
+    private FacultyRepository frepo;
+    @Autowired
+    private UniversityRepo universityRepo;
+    @Autowired
+    private BaseUserService baseUserService;
+    @Autowired
+    private ModelMapper modelMapper;
+    @Autowired
     @Qualifier("bcryptEncoder")
-    private final PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
 
-    // =========================================================
-    // CURRENT FACULTY
-    // =========================================================
+    // private final FacultyRepository frepo;
+    // public FacultyService(FacultyRepository frepo) {
+    //     this.frepo = frepo;
+    // }
 
-    public FacultyResponseDTO
-    getFacultyByEmailAndDomain(
-            String email,
-            String domain) {
+    // //  Login by domain + Gmail + Password
+    // public Faculty LoginFaculty(LoginRequestDTO loginRequestDTO){
+    //     Faculty facultyLogin = frepo.findByEmailAndDomain(loginRequestDTO.getEmail() ,loginRequestDTO.getDomain()).orElse(null);
+    //     boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword() ,facultyLogin.getPassword());
 
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
+    //     if (passwordMatch) {
+    //         facultyLogin.setLastLoginDateTime(LocalDateTime.now());
+    //         return frepo.save(facultyLogin);
 
-        Instant previousLogin =
-                faculty.getLastLoginDateTime();
+    //     } else {    return null;    }
+    // }
 
-        faculty.setLastLoginDateTime(
-                Instant.now()
-        );
+
+    // login when frontend send jwt token
+    public FacultyResponseDTO getFacultyByEmailAndDomain(String email, String domain) {
+        Faculty facultyLogin = frepo.findByEmailAndDomain(email,domain).orElseThrow();
+
+        // set lastLoginDateTime
+        LocalDateTime lastLogin = facultyLogin.getLastLoginDateTime();
+
+        facultyLogin.setLastLoginDateTime(LocalDateTime.now());
+        facultyLogin =  frepo.save(facultyLogin);
+
+        facultyLogin.setLastLoginDateTime(lastLogin);
+        FacultyResponseDTO responseDTO = modelMapper.map(facultyLogin, FacultyResponseDTO.class) ;
+
+        responseDTO.setLastLoginDateTime(lastLogin);
+        return responseDTO;
+    }
+
+
+    //    updata profile picture
+    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+
+        Faculty faculty= frepo.findByDomainAndEmail(domain ,email);
+
+        String uploadDir = "uploads/profile/";
+        Files.createDirectories(Paths.get(uploadDir));
+
+        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+
+        Path path = Paths.get(uploadDir,fileName);
+
+        Files.write(path,file.getBytes());
+
+        faculty.setProfilePic(uploadDir+fileName);
 
         frepo.save(faculty);
 
-        return toResponse(
-                faculty,
-                previousLogin
-        );
+        return uploadDir+fileName;
     }
 
 
-    // =========================================================
-    // PROFILE IMAGE
-    // =========================================================
 
-    public String updateProfilePic(
-            String domain,
-            String email,
-            MultipartFile file)
-            throws IOException {
+    // ---- CREATE ------
+    public String addFaculty(@NonNull String domain, @NonNull FacultySignupDTO facultySignupDTO) {
 
-        Faculty faculty =
-                frepo.findByDomainAndEmail(
-                        domain,
-                        email
-                );
+        Faculty requesFaculty = modelMapper.map(facultySignupDTO, Faculty.class);
 
-        if (faculty == null) {
-            throw new RuntimeException(
-                    "Faculty not found"
-            );
+        boolean emailExist = baseUserService.existsUserByEmail(facultySignupDTO.getEmail());
+        if(emailExist){
+            throw new RuntimeException("User Exist Please Try Another Email Id.");
         }
 
-        String uploadDir =
-                "uploads/profile/";
+        University university = universityRepo.findByDomain(domain)
+                .orElseThrow(() -> new RuntimeException("Invalid domain"));
+        requesFaculty.setDomain(domain);
+        requesFaculty.setUniversity(university);
 
-        Files.createDirectories(
-                Paths.get(uploadDir)
-        );
+        if( frepo.existsByFacultyIdAndDomain(requesFaculty.getFacultyId(),requesFaculty.getDomain()) ){    throw new RuntimeException("Faculty's Id field are already exist. ");  }
+        if( frepo.existsByDomainAndEmail(requesFaculty.getDomain(),requesFaculty.getEmail()) ){    throw new RuntimeException("Faculty's Email field are already exist. ");  }
+        if( frepo.existsByEmail(requesFaculty.getEmail())){ throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");  }
 
-        String original =
-                file.getOriginalFilename();
+        // for security use passwordEncoder
+        requesFaculty.setPassword(passwordEncoder.encode(requesFaculty.getPassword()));
 
-        String safeName =
-                original == null
-                        ? "profile"
-                        : Paths.get(original)
-                        .getFileName()
-                        .toString();
+        requesFaculty.setRole(Role.FACULTY);
+        Faculty save = frepo.save(requesFaculty);
+        return save.getName() + ",\nYou Account is Created Successfully.\nFaculty Id : " + save.getFacultyId() ;
 
-        String fileName =
-                System.currentTimeMillis()
-                        + "_"
-                        + safeName;
+    }
 
-        Path path =
-                Paths.get(
-                        uploadDir,
-                        fileName
-                );
-
-        Files.write(
-                path,
-                file.getBytes()
-        );
-
-        faculty.setProfilePic(
-                uploadDir + fileName
-        );
-
-        frepo.save(faculty);
-
-        return uploadDir + fileName;
+    // ------ READ ALL faculty count for specific university ------
+    public long getFacultyCount(String domain) {
+        return frepo.countByUniversity_Domain(domain);
     }
 
 
-    // =========================================================
-    // CREATE FACULTY
-    // =========================================================
 
-    public String addFaculty(
-            @NotNull String domain,
-            @NotNull FacultySignupDTO dto) {
+    // ------ READ ALL faculty for specific university ------
+    public List<FacultyResponseDTO> getAllFaculty(String domain) {
+        List<Faculty> facultyList = frepo.findByDomain(domain);
 
-        if (baseUserService.existsUserByEmail(
-                dto.getEmail())) {
-
-            throw new RuntimeException(
-                    "User already exists with this email."
-            );
-        }
-
-        University university =
-                universityRepo
-                        .findByDomain(domain)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Invalid domain"
-                                ));
-
-        Faculty faculty =
-                new Faculty();
-
-        faculty.setDomain(domain);
-
-        faculty.setUniversity(university);
-
-        faculty.setFacultyId(
-                dto.getFacultyId()
-        );
-
-        faculty.setName(
-                dto.getName()
-        );
-
-        faculty.setEmail(
-                dto.getEmail()
-        );
-
-        faculty.setMobileNumber(
-                dto.getMobileNumber()
-        );
-
-        faculty.setCourse(
-                dto.getCourse()
-        );
-
-        faculty.setPassword(
-                passwordEncoder.encode(
-                        dto.getPassword()
-                )
-        );
-
-        faculty.setRole(
-                Role.FACULTY
-        );
-
-
-        faculty.setTeachingAssignmentsMap(
-                dto.getTeachingAssignments()
-        );
-
-
-        if (frepo.existsByFacultyIdAndDomain(
-                faculty.getFacultyId(),
-                domain)) {
-
-            throw new RuntimeException(
-                    "Faculty ID already exists."
-            );
-        }
-
-        if (frepo.existsByDomainAndEmail(
-                domain,
-                faculty.getEmail())) {
-
-            throw new RuntimeException(
-                    "Faculty email already exists."
-            );
-        }
-
-        Faculty saved =
-                frepo.save(faculty);
-
-        return saved.getName()
-                + ",\nYour Account is Created Successfully."
-                + "\nFaculty Id : "
-                + saved.getFacultyId();
+        return facultyList.stream()
+                .map(faculty -> modelMapper.map(faculty, FacultyResponseDTO.class))
+                .collect(Collectors.toList());
     }
 
 
-    // =========================================================
-    // COUNT
-    // =========================================================
+    // Update Password or Forget Password
+    public boolean updatePasswordByEmail(String domain, String email, String newPass ) {
+        Faculty old = frepo.findByEmailAndDomain(email, domain).orElse(null);
+        if (old == null) return false;
 
-    public long getFacultyCount(
-            String domain) {
-
-        return frepo
-                .countByUniversity_Domain(domain);
-    }
-
-
-    // =========================================================
-    // GET ALL FACULTY
-    // =========================================================
-
-    public List<FacultyResponseDTO>
-    getAllFaculty(
-            String domain) {
-
-        return frepo
-                .findByDomain(domain)
-                .stream()
-                .map(faculty ->
-                        toResponse(
-                                faculty,
-                                null
-                        ))
-                .toList();
-    }
-
-
-    // =========================================================
-    // UPDATE PASSWORD
-    // =========================================================
-
-    public boolean updatePasswordByEmail(
-            String domain,
-            String email,
-            String newPassword) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElse(null);
-
-        if (faculty == null) {
-            return false;
-        }
-
-        faculty.setPassword(
-                passwordEncoder.encode(
-                        newPassword
-                )
-        );
-
-        frepo.save(faculty);
-
+        old.setPassword(newPass);
+        frepo.save(old);
         return true;
+
     }
 
-
-    // =========================================================
-    // UPDATE FACULTY
-    // =========================================================
-
-    public boolean updateFacultyByEmail(
-            String domain,
-            Faculty newData) {
-
-        Faculty old =
-                frepo.findByEmailAndDomain(
-                        newData.getEmail(),
-                        domain
-                ).orElse(null);
-
-        if (old == null) {
-            return false;
-        }
+    // ------ UPDATE Faculty Profile by Email  ------
+    public Boolean updateFacultyByFacultyEmail(String domain, Faculty newData) {
+        Faculty old = frepo.findByEmailAndDomain(newData.getEmail(), domain).orElse(null);
+        if (old == null) return false;
 
         if (newData.getName() != null)
-            old.setName(
-                    newData.getName()
-            );
+            old.setName(newData.getName());
 
         if (newData.getFacultyId() != null)
-            old.setFacultyId(
-                    newData.getFacultyId()
-            );
+            old.setFacultyId(newData.getFacultyId());
 
         if (newData.getMobileNumber() != null)
-            old.setMobileNumber(
-                    newData.getMobileNumber()
-            );
+            old.setMobileNumber(newData.getMobileNumber());
 
         if (newData.getCourse() != null)
-            old.setCourse(
-                    newData.getCourse()
-            );
+            old.setCourse(newData.getCourse());
 
-        /*
-         * NEW:
-         * Update complete batch -> subjects map.
-         */
-        if (newData.getTeachingAssignmentsJson()
-                != null) {
+        if (newData.getTeachingAssignments() != null)
+            old.setTeachingAssignments(newData.getTeachingAssignments());
 
-            old.setTeachingAssignmentsJson(
-                    newData.getTeachingAssignmentsJson()
-            );
-        }
 
         frepo.save(old);
-
         return true;
     }
 
 
-    // =========================================================
-    // ADD ONE TEACHING ASSIGNMENT
-    // =========================================================
-
-    public boolean addTeachingAssignment(
-            String domain,
-            String email,
-            String batch,
-            String subject) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        faculty.addTeachingAssignment(
-                batch,
-                subject
-        );
-
-        frepo.save(faculty);
-
-        return true;
-    }
-
-
-    // =========================================================
-    // REMOVE ONE TEACHING ASSIGNMENT
-    // =========================================================
-
-    public boolean removeTeachingAssignment(
-            String domain,
-            String email,
-            String batch,
-            String subject) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        faculty.removeTeachingAssignment(
-                batch,
-                subject
-        );
-
-        frepo.save(faculty);
-
-        return true;
-    }
-
-
-    // =========================================================
-    // GET FACULTY ASSIGNMENTS
-    // =========================================================
-
-    public Map<String, List<String>>
-    getTeachingAssignments(
-            String domain,
-            String email) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        return faculty.getTeachingAssignmentsMap();
-    }
-
-
-    // =========================================================
-    // GET STUDENTS BY COURSE
-    // =========================================================
-
-    public List<StudentResponseDTO>
-    getStudentsByFacultyCourse(
-            String domain,
-            String email) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        return studentService
-                .getStudentsByCourse(
-                        domain,
-                        faculty.getCourse()
-                );
-    }
-
-
-    // =========================================================
-    // GET STUDENTS FOR ONE BATCH
-    // =========================================================
-
-    public List<StudentResponseDTO>
-    getStudentsByFacultyTeachingBatch(
-            String domain,
-            String email,
-            String teachingBatch) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        /*
-         * Security:
-         *
-         * Faculty cannot request a batch
-         * that they don't teach.
-         */
-        boolean teachesBatch =
-                faculty.getTeachingAssignmentsMap()
-                        .containsKey(
-                                teachingBatch
-                                        .trim()
-                                        .toUpperCase()
-                        );
-
-        if (!teachesBatch) {
-
-            throw new RuntimeException(
-                    "Faculty is not assigned to batch "
-                            + teachingBatch
-            );
+    // ------ DELETE by Email  ------
+    public String deleteFacultyByEmail(String domain, String email) {
+        Faculty f = frepo.findByEmailAndDomain(email, domain).orElse(null);
+        if (f != null) {
+            frepo.delete(f);
+            return "Deleted faculty with email id " + email ;
         }
+        return "Invalid faculty email";
 
-        return studentService
-                .getStudentsByTeachingBatch(
-                        domain,
-                        teachingBatch
-                );
     }
 
+    // ------ READ ALL faculty for specific university ------
+    public List<FacultyResponseDTO> getAllFacultyBySubAdminCourse(String domain, String course) {
 
-    // =========================================================
-    // GET STUDENTS FOR BATCH + SUBJECT
-    // =========================================================
-
-    public List<StudentResponseDTO>
-    getStudentsForAttendance(
-            String domain,
-            String email,
-            String batch,
-            String subject) {
-
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Faculty not found"
-                        ));
-
-        /*
-         * CRITICAL SECURITY CHECK
-         *
-         * Faculty must actually teach
-         * this batch + subject.
-         */
-        if (!faculty.teaches(
-                batch,
-                subject)) {
-
-            throw new RuntimeException(
-                    "Faculty is not assigned to "
-                            + batch
-                            + " - "
-                            + subject
-            );
-        }
-
-        /*
-         * Students are found by their
-         * studyBatch.
-         */
-        List<StudentResponseDTO> students =
-                studentService
-                        .getStudentsByTeachingBatch(
-                                domain,
-                                batch
-                        );
-
-        /*
-         * Optional additional validation:
-         *
-         * only students who actually study
-         * the subject.
-         */
-        return students.stream()
-                .filter(student ->
-                        student.getStudySubjects() != null
-                                &&
-                                student.getStudySubjects()
-                                        .stream()
-                                        .anyMatch(
-                                                s -> s.equalsIgnoreCase(
-                                                        subject
-                                                )
-                                        ))
-                .toList();
-    }
-
-
-    // =========================================================
-    // FACULTY BY SUBADMIN COURSE
-    // =========================================================
-
-    public List<FacultyResponseDTO>
-    getAllFacultyBySubAdminCourse(
-            String domain,
-            String course) {
-
-        return frepo
-                .findByCourseAndDomain(
-                        course,
-                        domain
-                )
+        return frepo.findByCourseAndDomain(course, domain)
                 .stream()
-                .map(faculty ->
-                        toResponse(
-                                faculty,
-                                null
-                        ))
+                .map(faculty -> modelMapper.map(faculty, FacultyResponseDTO.class))
                 .toList();
     }
 
+    // ------ READ ALL student by faculty course for specific university  ------
 
-    // =========================================================
-    // DELETE
-    // =========================================================
+    public List<StudentResponseDTO> getStudentsByFacultyCourse(String domain, String email) {
 
-    public String deleteFacultyByEmail(
-            String domain,
-            String email) {
+        Faculty faculty = frepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Faculty not found"));
 
-        Faculty faculty =
-                frepo.findByEmailAndDomain(
-                        email,
-                        domain
-                ).orElse(null);
+        String course = faculty.getCourse();
 
-        if (faculty == null) {
-            return "Invalid faculty email";
-        }
-
-        frepo.delete(faculty);
-
-        return "Deleted faculty with email id "
-                + email;
+        return studentService.getStudentsByCourse(course, domain);
     }
 
+    // ------ READ ALL student by TeachingBatch (studyBatch for student) for specific university  ------
+//
+//    public List<StudentResponseDTO> getStudentsByFacultyTeachingBatch(String domain, String email) {
+//
+//        Faculty faculty = frepo.findByEmail(email)
+//                .orElseThrow(() -> new RuntimeException("Faculty not found"));
+//
+//        String teachingBatch = faculty.getTeachingBatch();
+//
+//        return studentService.getStudentsByTeachingBatch(domain , teachingBatch );
+//    }
 
-    // =========================================================
-    // RESPONSE MAPPER
-    // =========================================================
 
-    private FacultyResponseDTO toResponse(
-            Faculty faculty,
-            Instant lastLogin) {
 
-        FacultyResponseDTO response =
-                new FacultyResponseDTO();
-
-        response.setName(
-                faculty.getName()
-        );
-
-        response.setEmail(
-                faculty.getEmail()
-        );
-
-        response.setMobileNumber(
-                faculty.getMobileNumber()
-        );
-
-        response.setProfilePic(
-                faculty.getProfilePic()
-        );
-
-        response.setCreatedDateTime(
-                faculty.getCreatedDateTime()
-        );
-
-        response.setLastLoginDateTime(
-                lastLogin != null
-                        ? lastLogin
-                        : faculty.getLastLoginDateTime()
-        );
-
-        response.setFacultyId(
-                faculty.getFacultyId()
-        );
-
-        response.setCourse(
-                faculty.getCourse()
-        );
-
-        response.setTeachingAssignments(
-                faculty.getTeachingAssignmentsMap()
-        );
-
-        if (faculty.getUniversity() != null) {
-
-            response.setUniversityName(
-                    faculty.getUniversity().getUniversityName()
-            );
-        }
-
-        return response;
-    }
 }

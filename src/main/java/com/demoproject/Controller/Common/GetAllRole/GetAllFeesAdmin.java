@@ -33,17 +33,6 @@ public class GetAllFeesAdmin {
         List<FeesAdminResponseDTO> feesAdmins =
                 feesAdminService.getAllFeesAdmin(domain);
 
-        boolean isDomainAdmin = authentication
-                .getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_DOMAIN_ADMIN"::equals);
-
-        // Password is visible only to DOMAIN_ADMIN.
-        if (!isDomainAdmin) {
-            feesAdmins.forEach(admin -> admin.setPassword(null));
-        }
-
         return feesAdmins;
     }
 }

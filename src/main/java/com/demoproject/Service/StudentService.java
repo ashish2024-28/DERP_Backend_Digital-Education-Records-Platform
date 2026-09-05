@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,39 +42,23 @@ public class StudentService {
     // GET LOGGED-IN STUDENT
     // =========================================================
 
-    public StudentResponseDTO getStudentByEmailAndDomain(
-            String email,
-            String domain) {
+    public StudentResponseDTO getStudentByEmailAndDomain(String email, String domain) {
 
-        Student student =
-                studentRepository
-                        .findByEmailAndDomain(
-                                email,
-                                domain
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
+        Student student = studentRepository.findByEmailAndDomain( email, domain )
+                        .orElseThrow(() ->new RuntimeException( "Student not found" ) );
 
-        Instant lastLogin =
+        LocalDateTime lastLogin =
                 student.getLastLoginDateTime();
 
         student.setLastLoginDateTime(
-                Instant.now()
+                LocalDateTime.now()
         );
 
-        studentRepository.save(student);
+        student =  studentRepository.save(student);
 
-        student.setLastLoginDateTime(
-                lastLogin
-        );
+        student.setLastLoginDateTime(lastLogin);
 
-        return modelMapper.map(
-                student,
-                StudentResponseDTO.class
-        );
+        return modelMapper.map(student, StudentResponseDTO.class );
     }
 
 
@@ -107,7 +92,7 @@ public class StudentService {
         }
 
         student.setLastLoginDateTime(
-                Instant.now()
+                LocalDateTime.now()
         );
 
         studentRepository.save(student);
@@ -202,14 +187,10 @@ public class StudentService {
     // CREATE STUDENT
     // =========================================================
 
-    public String addStudent(
-            String domain,
-            StudentSignupDTO dto) {
+    public String addStudent( String domain, StudentSignupDTO dto) {
 
         if (dto == null) {
-            throw new RuntimeException(
-                    "Student data is required"
-            );
+            throw new RuntimeException( "Student data is required" );
         }
 
         if (baseUserService.existsUserByEmail(
@@ -237,36 +218,7 @@ public class StudentService {
         student.setDomain(domain);
         student.setUniversity(university);
         student.setRole(Role.STUDENT);
-
-        /*
-         * Normalize study batch.
-         *
-         * 2a → 2A
-         */
-        if (student.getStudyBatch() != null) {
-
-            student.setStudyBatch(
-                    student.getStudyBatch()
-                            .trim()
-                            .toUpperCase()
-            );
-        }
-
-        /*
-         * If frontend doesn't provide subjects,
-         * store [].
-         */
-        if (student.getStudyBatch() != null) {
-            student.setStudyBatch(
-                    student.getStudyBatch()
-                            .trim()
-                            .toUpperCase()
-            );
-        }
-
-        /*
-         * Password encryption.
-         */
+        /* Password encryption. */
         student.setPassword(
                 passwordEncoder.encode(
                         student.getPassword()
@@ -319,19 +271,14 @@ public class StudentService {
     // ALL STUDENTS
     // =========================================================
 
-    public List<StudentResponseDTO>
-    getAllStudent(String domain) {
+    public List<StudentResponseDTO> getAllStudent(String domain) {
 
         return studentRepository
                 .findAllByDomain(domain)
                 .stream()
                 .map(student ->
-                        modelMapper.map(
-                                student,
-                                StudentResponseDTO.class
-                        )
-                )
-                .toList();
+                        modelMapper.map(student, StudentResponseDTO.class )
+                ).toList();
     }
 
 
@@ -432,7 +379,7 @@ public class StudentService {
         }
 
         if (newData.getStudySubjects() != null) {
-            old.setStudySubjectsList(
+            old.setStudySubjects(
                     newData.getStudySubjects()
             );
         }
@@ -464,97 +411,6 @@ public class StudentService {
     }
 
 
-    // =========================================================
-    // UPDATE STUDENT SUBJECTS
-    // =========================================================
-
-    public boolean updateStudySubjects(
-            String domain,
-            String email,
-            List<String> subjects) {
-
-        Student student =
-                studentRepository
-                        .findByEmailAndDomain(
-                                email,
-                                domain
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
-
-        student.setStudySubjectsList(
-                subjects
-        );
-
-        studentRepository.save(student);
-
-        return true;
-    }
-
-
-    // =========================================================
-    // ADD STUDENT SUBJECT
-    // =========================================================
-
-    public boolean addStudySubject(
-            String domain,
-            String email,
-            String subjectCode) {
-
-        Student student =
-                studentRepository
-                        .findByEmailAndDomain(
-                                email,
-                                domain
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
-
-        student.addStudySubject(
-                subjectCode
-        );
-
-        studentRepository.save(student);
-
-        return true;
-    }
-
-
-    // =========================================================
-    // REMOVE STUDENT SUBJECT
-    // =========================================================
-
-    public boolean removeStudySubject(
-            String domain,
-            String email,
-            String subjectCode) {
-
-        Student student =
-                studentRepository
-                        .findByEmailAndDomain(
-                                email,
-                                domain
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
-
-        student.removeStudySubject(
-                subjectCode
-        );
-
-        studentRepository.save(student);
-
-        return true;
-    }
 
 
     // =========================================================
@@ -641,78 +497,5 @@ public class StudentService {
                 .toList();
     }
 
-    // =========================================================
-    // PRIVATE RESPONSE MAPPER
-    // =========================================================
-
-    private StudentResponseDTO toResponse(
-            Student student,
-            Instant lastLogin) {
-
-        StudentResponseDTO response =
-                new StudentResponseDTO();
-
-        response.setName(student.getName());
-
-        response.setEmail(student.getEmail());
-
-        response.setMobileNumber(
-                student.getMobileNumber()
-        );
-
-        response.setCreatedDateTime(
-                student.getCreatedDateTime()
-        );
-
-        response.setLastLoginDateTime(
-                lastLogin != null
-                        ? lastLogin
-                        : student.getLastLoginDateTime()
-        );
-
-        response.setProfilePic(
-                student.getProfilePic()
-        );
-
-        response.setRollNumber(
-                student.getRollNumber()
-        );
-
-        response.setCourse(
-                student.getCourse()
-        );
-
-        response.setBranch(
-                student.getBranch()
-        );
-
-        response.setBatch(
-                student.getBatch()
-        );
-
-        response.setStudyBatch(
-                student.getStudyBatch()
-        );
-
-        response.setStudySubjects(
-                student.getStudySubjectsList()
-        );
-
-        response.setFatherName(
-                student.getFatherName()
-        );
-
-        response.setFatherMobNo(
-                student.getFatherMobNo()
-        );
-
-        if (student.getUniversity() != null) {
-            response.setUniversityName(
-                    student.getUniversity().getUniversityName()
-            );
-        }
-
-        return response;
-    }
 
 }

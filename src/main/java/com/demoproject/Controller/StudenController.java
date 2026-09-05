@@ -28,19 +28,7 @@ public class StudenController {
 
     @Autowired
     private StudentService studentService;
-    
 
-    // @GetMapping
-    // public ResponseEntity<?> test(@PathVariable String domain) {
-    //     try {
-    //         return  ResponseEntity.ok(universityService.getUniversityName_Logo(domain) +
-    //          "Student Access OK");
-            
-    //     } catch (Exception e) {
-    //         return new ResponseEntity<>(e.getMessage(),HttpStatus.BAD_REQUEST);
-    //     }
-
-    // }
 
     @GetMapping
     public ResponseEntity<?> getStudent(@PathVariable String domain) {

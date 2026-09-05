@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.demoproject.DTO.ApiResponse;
+import com.demoproject.DTO.BulkUpload.BulkUploadResultDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminResponseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminSignupDTO;
 import com.demoproject.Entity.*;
@@ -241,7 +242,7 @@ public class DomainAdminController {
     // ------ UPDATE Faculty Profile by Email ------
     @PutMapping("/update_faculty_profile")
     public Boolean updateFacultyByFacultyId(@PathVariable String domain, @RequestBody Faculty faculty) {
-        return facultyService.updateFacultyByEmail(domain, faculty);
+        return facultyService.updateFacultyByFacultyEmail(domain, faculty);
     }
 
     // ------ DELETE by faculty Email ------
@@ -274,7 +275,7 @@ public class DomainAdminController {
 
     // ------ UPDATE SubAdmin Profile by Email  ------
     @PutMapping("/update_subAdmin")
-    public SubAdminResponseDTO updateSubAdminByEmail(@PathVariable String domain, @RequestBody SubAdmin s) {
+    public Boolean updateSubAdminByEmail(@PathVariable String domain, @RequestBody SubAdmin s) {
         return subAdminService.updateSubAdminByEmail(domain, s);
     }
 
@@ -367,13 +368,13 @@ public class DomainAdminController {
             @RequestParam("files") MultipartFile[] files) {
 
         try {
-            domainAdminService.uploadStudentsFromExcel(domain, files);
+            BulkUploadResultDTO resultDTO =  domainAdminService.uploadStudentsFromExcel(domain, files);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
                             true,
                             "Students uploaded successfully",
-                            null
+                            resultDTO
                     )
             );
 
@@ -392,13 +393,13 @@ public class DomainAdminController {
             @RequestParam("files") MultipartFile[] files) {
 
         try {
-            domainAdminService.uploadFacultyFromExcel(domain, files);
+            BulkUploadResultDTO resultDTO = domainAdminService.uploadFacultyFromExcel(domain, files);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
                             true,
                             "Faculty uploaded successfully",
-                            null
+                            resultDTO
                     )
             );
 
@@ -417,13 +418,13 @@ public class DomainAdminController {
             @RequestParam("files") MultipartFile[] files) {
 
         try {
-            domainAdminService.uploadSubAdminFromExcel(domain, files);
+            BulkUploadResultDTO resultDTO = domainAdminService.uploadSubAdminFromExcel(domain, files);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
                             true,
                             "SubAdmin uploaded successfully",
-                            null
+                            resultDTO
                     )
             );
 
@@ -442,13 +443,13 @@ public class DomainAdminController {
             @RequestParam("files") MultipartFile[] files) {
 
         try {
-            domainAdminService.uploadFeesAdminFromExcel(domain, files);
+            BulkUploadResultDTO resultDTO = domainAdminService.uploadFeesAdminFromExcel(domain, files);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
                             true,
                             "FeesAdmin uploaded successfully",
-                            null
+                            resultDTO
                     )
             );
 

@@ -3,6 +3,7 @@ package com.demoproject.DTO.SubAdminDTO;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -19,18 +20,19 @@ public class SubAdminResponseDTO {
 
     private String profilePic;
 
-    private Instant createdDateTime;
+    private LocalDateTime createdDateTime;
 
-    private Instant lastLoginDateTime;
+    private LocalDateTime lastUpdateDateTime;
+
+    private LocalDateTime lastLoginDateTime;
 
     private String subAdminId;
 
     private String course;
 
-    private Map<String, List<String>> teachingAssignments;
+    private String teachingAssignments;
 
     private String universityName;
 
-    private String password;
 
 }

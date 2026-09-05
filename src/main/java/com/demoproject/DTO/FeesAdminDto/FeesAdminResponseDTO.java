@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -15,15 +16,15 @@ public class FeesAdminResponseDTO {
     private String email;
     private String mobileNumber;
 
-    private Instant createdDateTime;
-    private Instant lastLoginDateTime; // For login purposes
+    private LocalDateTime createdDateTime;
+    private LocalDateTime lastUpdateDateTime; // For login purposes
+    private LocalDateTime lastLoginDateTime; // For login purposes
 
     private String profilePic;// store image path OR base64
 
 
     private String feesAdminId;
 
-    private String password; // Used only see by admin
 
     private String universityName;
 }

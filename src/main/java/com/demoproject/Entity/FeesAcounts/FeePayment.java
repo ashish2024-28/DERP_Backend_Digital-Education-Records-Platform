@@ -29,6 +29,6 @@
 // @Enumerated(EnumType.STRING) @Column(nullable=false) private FeePaymentStatus status=FeePaymentStatus.PENDING;
 // private String rejectionReason;
 // private String verifiedBy;
-// private Instant submittedAt=Instant.now();
-// private Instant verifiedAt;
+// private LocalDateTime submittedAt=LocalDateTime.now();
+// private LocalDateTime verifiedAt;
 //}

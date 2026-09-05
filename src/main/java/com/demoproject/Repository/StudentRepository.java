@@ -109,4 +109,14 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     );
 
     boolean existsByEmailIgnoreCase(String email);
+
+
+
+    List<Student> findByCourseIgnoreCaseAndStudyBatchIgnoreCase(
+            String course,
+            String studyBatch
+    );
+
+
+    List<Student> findByDomainAndCourseAndStudyBatchOrderByRollNumberAsc(String domain, String course, String batch);
 }

@@ -36,7 +36,19 @@ spring:
           starttls:
             enable: true
 
+#              Spring Boot
+#              :8080
+#              │
+#              ┌────────┼────────┐
+#              ↓        ↓        ↓
+#        localhost   Wi-Fi    Ethernet
+#        127.0.0.1   172...    192...
+#        │        │
+#        PC      PHONE
+
+
 server:
+  address: 0.0.0.0
   port: ${PORT:8080}
   servlet:
     context-path: ${SERVER_PATH:/}

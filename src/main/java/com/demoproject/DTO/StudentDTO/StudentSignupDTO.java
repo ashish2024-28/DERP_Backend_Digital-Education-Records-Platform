@@ -38,7 +38,7 @@ public class StudentSignupDTO {
      *
      * ["JAVA", "DSA", "OS", "DBMS"]
      */
-    private List<String> studySubjects;
+    private String studySubjects;
 
     private String fatherName;
 

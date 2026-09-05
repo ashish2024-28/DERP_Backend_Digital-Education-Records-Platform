@@ -3,6 +3,7 @@ package com.demoproject.DTO.FacultyDTO;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -19,18 +20,19 @@ public class FacultyResponseDTO {
 
     private String profilePic;
 
-    private Instant createdDateTime;
+    private LocalDateTime createdDateTime;
 
-    private Instant lastLoginDateTime;
+    private LocalDateTime lastUpdateDateTime; // For login purposes
+
+    private LocalDateTime lastLoginDateTime;
 
     private String facultyId;
 
     private String course;
 
-    private Map<String, List<String>> teachingAssignments;
+    private String teachingAssignments;
 
     private String universityName;
 
-    private String password; // Used only see by admin
 
 }

@@ -2,20 +2,14 @@ package com.demoproject.Entity;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import com.demoproject.annotation.LowerCase;
+import com.demoproject.annotation.TitleCase;
+import com.demoproject.annotation.UpperCase;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,6 +35,7 @@ public class University {
     private Long id;
     
     @Column(nullable = false)
+    @LowerCase
     private String domain;
 
     // aict Approval data
@@ -48,32 +43,52 @@ public class University {
     private String permanentId;
 
     @Column(nullable = false)
+    @UpperCase
     private String institutionName; // Name of the Institution (may be same)
 
-    // UGC Approval data                               
+    // UGC Approval data
+    @UpperCase
     private String universityName; // Name of the University (may be same)
 
     // These fields for both 
     @Column(nullable = false)
+    @TitleCase
     private String institutionType; //   (private ,State )
 
     @Column(nullable = false)
     private String establishmentYear;
 
     @Column(nullable = false)
+    @TitleCase
     private String address; // Address same as Institution
 
     @Column(nullable = false)
+    @TitleCase
     private String state;
     
     // university contact details
     @Column(nullable = false)
+    @LowerCase
     private String email;
 
     @Column(nullable = false)
     private String mobileNumber;
 
-    private Instant createdDateTime  = Instant.now(); // date and time when create account
+    // date and time when create account
+    private LocalDateTime createdDateTime = LocalDateTime.now();
+    private LocalDateTime lastUpdateDateTime;
+
+
+    @PrePersist
+    public void prePersist(){
+        createdDateTime = LocalDateTime.now();
+        lastUpdateDateTime = LocalDateTime.now();
+    }
+    @PreUpdate
+    public void preUpdata(){
+        lastUpdateDateTime = LocalDateTime.now();
+    }
+
 
     // for this use configration extend WebMvcConfigurer
     // @Column(nullable = false)

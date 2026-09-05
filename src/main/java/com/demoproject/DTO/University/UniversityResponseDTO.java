@@ -1,6 +1,7 @@
 package com.demoproject.DTO.University;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,7 +28,8 @@ public class UniversityResponseDTO {
     private String email;
     private String mobileNumber;
 
-    private Instant createdDateTime ; // date and time when create account
+    private LocalDateTime createdDateTime ; // date and time when create account
+    private LocalDateTime lastUpdateDateTime ; // date and time when create account
     private String universityLogoPath; // Stores "alex_profile.png"
 
 

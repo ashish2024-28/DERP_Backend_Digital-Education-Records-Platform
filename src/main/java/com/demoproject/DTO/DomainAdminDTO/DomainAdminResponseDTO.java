@@ -1,6 +1,6 @@
 package com.demoproject.DTO.DomainAdminDTO;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,8 +16,9 @@ public class DomainAdminResponseDTO {
     private String mobileNumber;
     private String email;
 
-    private Instant createdDateTime;
-    private Instant lastLoginDateTime;
+    private LocalDateTime createdDateTime;
+    private LocalDateTime lastUpdateDateTime;
+    private LocalDateTime lastLoginDateTime;
 
     private String profilePic;// store image path OR base64
 

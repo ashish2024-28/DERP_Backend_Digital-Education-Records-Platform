@@ -9,6 +9,12 @@ public record StudentAttendanceResponse(
 
         String rollNumber,
 
+        String cource,
+
+        String branch,
+
+        String batch,
+
         String studyBatch,
 
         List<String> subjects,

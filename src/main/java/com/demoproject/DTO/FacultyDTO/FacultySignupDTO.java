@@ -29,7 +29,7 @@ public class FacultySignupDTO {
      *   "3A": ["DBMS"]
      * }
      */
-    private Map<String, List<String>> teachingAssignments;
+    private String teachingAssignments;
 
     private String password;
 }
