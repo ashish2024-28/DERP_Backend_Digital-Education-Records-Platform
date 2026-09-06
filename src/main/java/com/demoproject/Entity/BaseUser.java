@@ -5,11 +5,12 @@ import java.time.LocalDateTime;
 
 import com.demoproject.annotation.LowerCase;
 import com.demoproject.annotation.TitleCase;
+import com.demoproject.listener.StringNormalizationListener;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
+@EntityListeners(StringNormalizationListener.class)
 @MappedSuperclass
 @Data
 public abstract class BaseUser {

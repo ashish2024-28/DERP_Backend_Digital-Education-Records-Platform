@@ -3,17 +3,10 @@ package com.demoproject.Entity;
 import com.demoproject.Entity.ProfileInformation.StudentInfo.Certifications;
 import com.demoproject.annotation.TitleCase;
 import com.demoproject.annotation.UpperCase;
+import com.demoproject.listener.StringNormalizationListener;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,6 +28,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
+@EntityListeners(StringNormalizationListener.class)
 public class Student extends BaseUser {
 
     /*
@@ -164,4 +158,61 @@ public class Student extends BaseUser {
 
 
 
+
+
+
+
+
+
+
+    public boolean studiesSubject(String subject) {
+
+        if (studySubjects == null ||
+                studySubjects.isBlank() ||
+                subject == null ||
+                subject.isBlank()) {
+
+            return false;
+        }
+
+        String requestedSubject =
+                subject.trim().toUpperCase();
+
+        for (String studentSubject :
+                studySubjects.split(",")) {
+
+            if (studentSubject.trim()
+                    .equalsIgnoreCase(requestedSubject)) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public List<String> getStudySubjectsList() {
+
+        List<String> subjects =
+                new ArrayList<>();
+
+        if (studySubjects == null ||
+                studySubjects.isBlank()) {
+
+            return subjects;
+        }
+
+        for (String subject :
+                studySubjects.split(",")) {
+
+            if (!subject.isBlank()) {
+
+                subjects.add(
+                        subject.trim().toUpperCase()
+                );
+            }
+        }
+
+        return subjects;
+    }
 }

@@ -1,9 +1,7 @@
 package com.demoproject.Entity.AttendenceErp;
 
 import com.demoproject.Entity.Student;
-
 import jakarta.persistence.*;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,12 +11,18 @@ import lombok.Setter;
 @Table(
         name = "erp_attendance_aggregate",
         uniqueConstraints = @UniqueConstraint(
+                name = "uk_attendance_aggregate_student_subject",
                 columnNames = {
                         "student_id",
-                        "subject",
-                        "academic_session"
+                        "subject"
                 }
-        )
+        ),
+        indexes = {
+                @Index(
+                        name = "idx_attendance_aggregate_domain_student",
+                        columnList = "domain,student_id"
+                )
+        }
 )
 @Getter
 @Setter
@@ -32,9 +36,6 @@ public class AttendanceAggregate {
 
     @Column(nullable = false)
     private String domain;
-
-    @Column(nullable = false)
-    private String academicSession;
 
     @Column(nullable = false)
     private String subject;
@@ -52,6 +53,9 @@ public class AttendanceAggregate {
             fetch = FetchType.LAZY,
             optional = false
     )
-    @JoinColumn(name = "student_id")
+    @JoinColumn(
+            name = "student_id",
+            nullable = false
+    )
     private Student student;
 }

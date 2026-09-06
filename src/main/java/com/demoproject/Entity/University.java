@@ -9,6 +9,7 @@ import java.util.List;
 import com.demoproject.annotation.LowerCase;
 import com.demoproject.annotation.TitleCase;
 import com.demoproject.annotation.UpperCase;
+import com.demoproject.listener.StringNormalizationListener;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -28,6 +29,7 @@ import lombok.Setter;
 @Data
 @Getter
 @Setter
+@EntityListeners(StringNormalizationListener.class)
 public class University {
     
     @Id

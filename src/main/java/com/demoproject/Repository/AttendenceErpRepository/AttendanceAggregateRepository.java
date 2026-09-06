@@ -1,7 +1,6 @@
 package com.demoproject.Repository.AttendenceErpRepository;
 
 import com.demoproject.Entity.AttendenceErp.AttendanceAggregate;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,19 +10,21 @@ public interface AttendanceAggregateRepository
         extends JpaRepository<AttendanceAggregate, Long> {
 
  Optional<AttendanceAggregate>
- findByStudentRollNumberAndSubjectAndAcademicSession(
-         String rollNO,
-         String subject,
-         String academicSession
+ findByStudent_IdAndSubject(
+         Long studentId,
+         String subject
  );
 
  List<AttendanceAggregate>
- findByStudentRollNumberOrderBySubjectAsc(
-         String rollNO
+ findByStudent_Id(
+         Long studentId
  );
 
  List<AttendanceAggregate>
- findByDomainOrderByStudentIdAsc(
-         String domain
+ findByDomainAndStudent_Id(
+         String domain,
+         Long studentId
  );
+
+ void deleteByDomain(String domain);
 }

@@ -9,7 +9,7 @@ public record StudentAttendanceResponse(
 
         String rollNumber,
 
-        String cource,
+        String course,
 
         String branch,
 

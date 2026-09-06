@@ -2,6 +2,7 @@ package com.demoproject.Entity;
 
 
 
+import com.demoproject.listener.StringNormalizationListener;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
@@ -20,6 +21,7 @@ uniqueConstraints = {
 @AllArgsConstructor
 @Getter
 @Setter
+@EntityListeners(StringNormalizationListener.class)
 public class DomainAdmin extends BaseUser {
 
 

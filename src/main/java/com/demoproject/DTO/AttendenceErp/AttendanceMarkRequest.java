@@ -7,6 +7,13 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.Map;
 
+/**
+ * Attendance payload sent by a faculty member.
+ *
+ * Academic session is intentionally NOT accepted from the client.
+ * The server derives the semester from the attendance date and the
+ * domain's semester configuration.
+ */
 public record AttendanceMarkRequest(
 
         @NotBlank
@@ -20,9 +27,6 @@ public record AttendanceMarkRequest(
 
         @NotNull
         Integer periodNumber,
-
-        @NotBlank
-        String academicSession,
 
         @NotEmpty
         Map<String, String> attendance

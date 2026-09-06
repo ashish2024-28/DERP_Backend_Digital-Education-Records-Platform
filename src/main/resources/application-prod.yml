@@ -12,7 +12,16 @@ spring:
     hibernate:
       ddl-auto: update   # ⚠️ risky in prod (better: validate)
     show-sql: false
-    database-platform: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+#  The 5 main values
+#  Value	What it does	Development	Production
+#  none	Does nothing to schema	⚠️ Sometimes	✅ Recommended
+#  validate	Checks entity ↔ DB schema, but doesn't change DB	✅ Good	✅ Excellent
+#  update	Automatically changes DB schema	✅ Good for development	❌ Avoid
+#  create	Drops existing schema and creates new	⚠️ Testing	❌ Never
+#  create-drop	Creates on startup, drops on shutdown	⚠️ Temporary testing	❌ Never
+#
 
   thymeleaf:
     cache: false

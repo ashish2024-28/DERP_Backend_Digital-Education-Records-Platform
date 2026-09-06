@@ -118,5 +118,21 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     );
 
 
+    // In StudentRepository
+    List<Student> findByDomainIgnoreCaseAndCourseIgnoreCaseAndStudyBatchIgnoreCaseOrderByRollNumberAsc(
+            String domain, String course, String studyBatch);
+
     List<Student> findByDomainAndCourseAndStudyBatchOrderByRollNumberAsc(String domain, String course, String batch);
+
+
+
+    List<Student> findByDomainIgnoreCaseAndCourseIgnoreCaseOrderByRollNumberAsc(
+            String domain, String course);
+
+    List<Student> findByDomainIgnoreCaseAndStudyBatchIgnoreCaseOrderByRollNumberAsc(
+            String domain, String studyBatch);
+
+    List<Student> findByDomainIgnoreCaseOrderByCourseAscStudyBatchAscRollNumberAsc(
+            String domain);
+
 }

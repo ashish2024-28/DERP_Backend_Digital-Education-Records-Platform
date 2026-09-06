@@ -2,9 +2,7 @@ package com.demoproject.Entity.AttendenceErp;
 
 import com.demoproject.Entity.Faculty;
 import com.demoproject.Entity.Student;
-
 import jakarta.persistence.*;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,12 +14,12 @@ import java.time.LocalDate;
 @Table(
         name = "erp_attendance_record",
         uniqueConstraints = @UniqueConstraint(
+                name = "uk_attendance_student_subject_date_period",
                 columnNames = {
                         "student_id",
                         "subject",
                         "attendance_date",
-                        "period_number",
-                        "academic_session"
+                        "period_number"
                 }
         ),
         indexes = {
@@ -30,7 +28,7 @@ import java.time.LocalDate;
                         columnList = "student_id,attendance_date"
                 ),
                 @Index(
-                        name = "idx_attendance_batch_date",
+                        name = "idx_attendance_domain_batch_date",
                         columnList = "domain,study_batch,attendance_date"
                 )
         }
@@ -49,9 +47,6 @@ public class AttendanceRecord {
  private String domain;
 
  @Column(nullable = false)
- private String academicSession;
-
- @Column(nullable = false)
  private String teachingBatch;
 
  @Column(nullable = false)
@@ -66,13 +61,6 @@ public class AttendanceRecord {
  )
  private LocalDate attendanceDate;
 
- /*
-  * Period number.
-  *
-  * 1 = first period
-  * 2 = second period
-  * 3 = third period
-  */
  @Column(
          name = "period_number",
          nullable = false
@@ -87,7 +75,10 @@ public class AttendanceRecord {
          fetch = FetchType.LAZY,
          optional = false
  )
- @JoinColumn(name = "student_id")
+ @JoinColumn(
+         name = "student_id",
+         nullable = false
+ )
  private Student student;
 
  @ManyToOne(fetch = FetchType.LAZY)
