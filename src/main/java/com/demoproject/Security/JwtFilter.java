@@ -36,6 +36,19 @@ public class JwtFilter extends OncePerRequestFilter  {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
          FilterChain filterChain) throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
+        if (path.startsWith("/swagger-ui/")
+                || path.equals("/swagger-ui.html")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/webjars/")
+                || path.startsWith("/derp_docs")
+                || path.startsWith("/swagger/")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
             // step: 2.1 get token (Header exists) from user
             // Bearer eafdghdfsyf.8sdfs68sdfsf0s.dfsdf9sdfdf7d8f67sdfsf <- token
             String authHeader = request.getHeader("Authorization");
@@ -64,7 +77,8 @@ public class JwtFilter extends OncePerRequestFilter  {
                     // create new authentication object 
                     UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails,null, userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource());
+//                    authToken.setDetails(new WebAuthenticationDetailsSource());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }

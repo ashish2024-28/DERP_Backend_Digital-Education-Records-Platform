@@ -35,7 +35,9 @@ public class Security {
         return httpSecurity
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/","/home_page/**","/{domain}/login_profile/**",
-                            "/{domain}/signup/**","/uploads/**","/test/**").permitAll()
+                            "/{domain}/signup/**","/uploads/**","/test/**",
+                    "/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**","/v3/api-docs","/webjars/**","/derp_docs/**","/swagger/**"
+            ).permitAll()
             .requestMatchers("/admin/**").hasRole("ADMIN")
             .requestMatchers("/{domain}/domainAdmin/**").hasAnyRole("ADMIN","DOMAIN_ADMIN")
             .requestMatchers("/{domain}/subadmin/**").hasAnyRole("ADMIN","SUB_ADMIN")
@@ -52,7 +54,7 @@ public class Security {
         .build();
     }
 
-   
+
     @Bean("bcryptEncoder")
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
@@ -72,10 +74,10 @@ public class Security {
     @Bean
     public AuthenticationManager authenticationManager (AuthenticationConfiguration authenticationConfiguration) throws Exception{
         return authenticationConfiguration.getAuthenticationManager();
-        
+
     }
 
-    
+
 
 
 }

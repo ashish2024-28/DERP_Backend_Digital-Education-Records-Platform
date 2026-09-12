@@ -1,166 +1,281 @@
-# Attendance Management System — Design & Bug Report
+# DERP — Digital Education Records Platform
 
-## Bugs Fixed
+DERP (Digital Education Records Platform) is a centralized educational management platform designed to organize academic records, attendance, certificates, achievements, internships, workshops, results, and other student-related information in one digital ecosystem.
 
-| File | Bug | Fix |
-|------|-----|-----|
-| `Student.java` | `private AttendanceRecord attendanceRecord` — wrong type for `@OneToMany` | Changed to `List<AttendanceRecord> attendanceRecords` |
-| `Student.java` | `private FeesPayment feesPayment` — same wrong type | Changed to `List<FeesPayment> feesPayments` |
-| `AttendanceRecord.java` | Had NO reference to `AttendanceSession` — records were orphaned with no parent | Added `@ManyToOne private AttendanceSession session` |
-| `AttendanceSession.java` | No `@OneToMany records` list — no way to navigate from session → its records | Added `@OneToMany(mappedBy="session") List<AttendanceRecord> records` |
-| `AttendanceRecord.java` | Unique constraint referenced `session_id` column but session relation didn't exist | Fixed — now properly references `session_id` FK |
-| `FacultyService.getFacultyByGmail` | Called `frepo.save(faculty)` on a read — unnecessary write on fetch | Should just `return faculty` without saving |
-| `BaseUserService.existsUserByEmail` | `universityRepo.existsByEmail` called twice (once at top, once at bottom) | Remove duplicate call |
+## Why DERP?
 
----
+The idea came from real problems experienced in college.
+
+During a hackathon, the first version of the idea was implemented using HTML, CSS, and JavaScript. While working on it, several practical problems became clear.
+
+Students often have:
+
+* Multiple certificates
+* Workshop certificates
+* Internship certificates
+* Academic results
+* Achievements
+* Participation records
+* Different documents stored in different places
+
+When preparing a resume, students may remember that they have achievements but cannot easily find or organize them.
+
+At the same time, college ERP systems can create problems such as:
+
+* Slow attendance submission
+* ERP crashes
+* Delayed responses
+* Repeated attendance entry
+* Failed submissions
+* Difficulty managing academic records
+* Additional administrative workload
+
+These problems led to the idea of building a larger platform rather than a small static project.
+
+## Vision
+
+The long-term vision of DERP is:
+
+> Build a centralized digital education-record ecosystem where students, faculty, administrators, and educational institutions can manage academic information efficiently.
+
+## Core Areas
+
+DERP can eventually support:
+
+```text
+Student
+│
+├── Profile ──> (img,name,rollNo,section,course,branch,batch,email,mobNo,fatherName,fatheMob,etc)
+│
+├── Attendance/ERP
+├── 
+├── Semester Results
+├── Certificates
+├── Workshops
+├── Internships
+├── Achievements
+├── Academic Records
+├── Fees
+├──Resume / Portfolio Data
+└──etc 
+```
+
+Faculty can manage:
+
+```text
+Faculty
+│
+├── Assigned Subjects
+├── Students
+├── Attendance
+├── Academic Records
+└── Subject-related activities
+```
+
+Administrators can manage:
+
+```text
+Administration
+│
+├── Students
+├── Faculty
+├── Departments
+├── Courses
+├── Subjects
+├── Attendance
+├── Results
+├── Certificates
+├── Fees
+└── Institution Configuration
+```
+
+## Technology Stack
+
+### Frontend
+
+* React.js
+* HTML5
+* CSS3
+* Tailwind CSS
+* JavaScript
+
+### Backend
+
+* Java
+* Spring Boot
+* Spring Security
+* JWT
+
+[//]: # (* OAuth2)
+* REST APIs
+* JDBC / JPA
+
+### Database
+
+* MySQL
+* Postgree
+
+### Development Tools
+
+* Git
+* GitHub
+* Maven
+* Docker
+* Postman
+* Swagger / OpenAPI
+* diagrams.net
+* Figma
 
 ## Architecture
 
-```
-Faculty creates AttendanceSession
-         │
-         ▼
-  ┌──────────────────────────────────────────────┐
-  │  AttendanceSession                           │
-  │  ─────────────────                          │
-  │  id, domain, course, branch, batch, section │
-  │  subject, sessionDate, locked               │
-  │  faculty ──► Faculty                        │
-  │  university ──► University                  │
-  └──────────────────────────────────────────────┘
-         │  OneToMany
-         ▼
-  ┌──────────────────────────────────────────────┐
-  │  AttendanceRecord                            │
-  │  ────────────────                            │
-  │  id                                          │
-  │  session ──► AttendanceSession (ManyToOne)   │
-  │  student ──► Student (ManyToOne)             │
-  │  status: PRESENT | ABSENT | LEAVE            │
-  │  markedAt, updatedAt                         │
-  └──────────────────────────────────────────────┘
+Initial architecture:
+
+```text
+React Frontend
+       │
+       ▼
+Spring Boot REST API
+       │
+       ▼
+Service Layer
+       │
+       ▼
+Repository / Data Access Layer
+       │
+       ▼
+MySQL/Postgree
 ```
 
----
+Future architecture may evolve toward:
 
-## Matching Logic: Faculty → Students
-
-```
-Faculty.course         == Session.course
-Faculty.teachingBatch  contains  Session.batch
-
-Session.course  == Student.course
-Session.branch  == Student.branch
-Session.batch   == Student.batch
-Student.yearWithSection  contains  Session.section
-```
-
-### Example
-| Field | Faculty | Session | Student |
-|-------|---------|---------|---------|
-| course | `B.Tech` | `B.Tech` | `B.Tech` |
-| teachingBatch | `2021-2025,2022-2026` | — | — |
-| batch | — | `2021-2025` | `2021-2025` |
-| branch | — | `CSE` | `CSE` |
-| section | — | `A` | yearWithSection = `"3A"` ✓ |
-
----
-
-## API Reference
-
-### Faculty
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/attendance/session/create?domain=HU` | Create session → returns eligible students |
-| `POST` | `/api/attendance/session/mark?domain=HU` | Submit marks (set `lock:true` to finalize) |
-| `GET`  | `/api/attendance/session/{id}?domain=HU` | Fetch session with current marks |
-| `GET`  | `/api/attendance/session/history?domain=HU` | All sessions by this faculty |
-
-### Student
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET`  | `/api/attendance/student/dashboard?domain=HU` | Full dashboard: overall %, per-subject %, recent records with faculty name |
-
----
-
-## Faculty Request Examples
-
-### Create Session
-```json
-POST /api/attendance/session/create?domain=HU
-{
-  "course": "B.Tech",
-  "branch": "CSE",
-  "batch": "2021-2025",
-  "section": "A",
-  "subject": "Data Structures",
-  "sessionDate": "2026-03-19"
-}
+```text
+                 ┌───────────────┐
+                 │    Frontend   │
+                 │    React      │
+                 └───────┬───────┘
+                         │
+                         ▼
+                 ┌───────────────┐
+                 │ API Gateway   │
+                 └───────┬───────┘
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+          User Service  Academic   Attendance
+                       Service      Service
+              │          │          │
+              └──────────┼──────────┘
+                         ▼
+                    Data Layer
+                         │
+                         ▼
+                       MySQL
 ```
 
-### Mark Attendance
-```json
-POST /api/attendance/session/mark?domain=HU
-{
-  "sessionId": 42,
-  "lock": true,
-  "entries": [
-    { "studentId": 101, "status": "PRESENT" },
-    { "studentId": 102, "status": "ABSENT"  },
-    { "studentId": 103, "status": "LEAVE"   }
-  ]
-}
+## Main Objectives
+
+1. Centralize student educational records.
+2. Reduce manual administrative work.
+3. Improve attendance management.
+4. Organize certificates and achievements.
+5. Make academic information easier to access.
+6. Reduce duplicate data entry.
+7. Provide role-based access.
+8. Create a scalable architecture.
+9. Maintain secure student information.
+10. Build a production-oriented software engineering project.
+
+## Current Roles
+
+* Student
+* Faculty
+* Admin
+* Domain Admin
+* Sub Admin
+* Fees Admin
+
+## Engineering Documentation
+
+The complete engineering process is documented under `/docs`.
+
+| Document | Purpose                |
+| -------- | ---------------------- |
+| 01       | Problem                |
+| 02       | Requirements           |
+| 03       | MVP                    |
+| 04       | User Flow              |
+| 05       | UI/UX                  |
+| 06       | HLD                    |
+| 07       | Database               |
+| 08       | API                    |
+| 09       | LLD                    |
+| 10       | Testing                |
+| 11       | Deployment             |
+| 12       | Monitoring             |
+| 13       | Architecture Decisions |
+
+## Project Philosophy
+
+DERP is not intended to be only a CRUD application.
+
+The project follows a software-engineering lifecycle:
+
+```text
+Problem
+   ↓
+Requirements
+   ↓
+MVP
+   ↓
+User Flow
+   ↓
+UI/UX
+   ↓
+HLD
+   ↓
+Database
+   ↓
+API
+   ↓
+LLD
+   ↓
+Implementation
+   ↓
+Testing
+   ↓
+Deployment
+   ↓
+Monitoring
+   ↓
+Iteration
 ```
 
----
+## Status
 
-## Student Dashboard Response
+DERP is an evolving project.
 
-```json
-{
-  "studentName": "Rahul Sharma",
-  "rollNumber": "21CSE001",
-  "overallPercentage": 78.5,
-  "subjectSummaries": [
-    {
-      "subject": "Data Structures",
-      "totalClasses": 40,
-      "presentCount": 35,
-      "absentCount": 4,
-      "leaveCount": 1,
-      "attendancePercentage": 87.5,
-      "status": "SAFE"
-    },
-    {
-      "subject": "DBMS",
-      "totalClasses": 30,
-      "presentCount": 18,
-      "absentCount": 12,
-      "leaveCount": 0,
-      "attendancePercentage": 60.0,
-      "status": "WARNING"
-    }
-  ],
-  "recentRecords": [
-    {
-      "sessionDate": "2026-03-19",
-      "subject": "Data Structures",
-      "status": "PRESENT",
-      "facultyName": "Dr. Anjali Singh",
-      "facultyId": "FAC-CSE-001",
-      "facultyEmail": "anjali.singh@hu.ac.in"
-    }
-  ]
-}
-```
+The initial prototype was created during a hackathon using HTML, CSS, and JavaScript. The project is now being developed toward a more scalable full-stack architecture using React, Spring Boot, and MySQL.
 
----
+## Future Scope
 
-## Notes
+Potential future modules include:
 
-- **Locking**: Once `lock: true` is sent, no further edits are allowed for that session. Faculty must be sure before locking.
-- **Idempotency**: Creating a session that already exists returns the existing one — safe to retry.
-- **Security**: Every service method cross-checks `domain` and `email` from JWT against the database record. A faculty from University A cannot touch University B's sessions.
-- **yearWithSection format**: Store as `"3A"` meaning Year 3, Section A. The LIKE query `%A%` matches it. Keep section values short (single letter) to avoid false matches.
+* Digital certificates
+* QR-based certificate verification
+* Resume generation
+* Internship management
+* Workshop management
+* Fee management
+* Notifications
+* Parent access
+* Analytics
+* Institution-level dashboards
+* Multi-university support
+* Audit logs
+* Document storage
+* Advanced reporting
+* Mobile application
+
+## License
+
+To be decided.
