@@ -3,75 +3,74 @@ package com.demoproject.Controller.AttendenceErpController;
 import com.demoproject.DTO.ApiResponse;
 import com.demoproject.DTO.AttendenceErp.*;
 import com.demoproject.Entity.DomainAdmin;
+import com.demoproject.Entity.AttendenceErp.ERPActionAudit;
 import com.demoproject.Entity.SubAdmin;
 import com.demoproject.Repository.DomainAdminRepository;
 import com.demoproject.Repository.SubAdminRepository;
+import com.demoproject.Service.AttendenceErpService.ERPActionAuditService;
 import com.demoproject.Service.AttendenceErpService.AttendanceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/{domain}/erp/attendance")
 @RequiredArgsConstructor
-public class AttendenceErpController {
+public class AttendanceErpController {
 
     private final AttendanceService attendanceService;
+    private final ERPActionAuditService auditService;
     private final SubAdminRepository subAdminRepository;
     private final DomainAdminRepository domainAdminRepository;
 
 
-    // =========================================================
-    // FACULTY - SETUP
-    // =========================================================
-
-    @GetMapping("/faculty/setup")
-    @PreAuthorize("hasRole('FACULTY')")
-    public ResponseEntity<ApiResponse<?>> getFacultySetup(
-            @PathVariable String domain,
-            Authentication authentication
-    ) {
-
-        FacultyAttendanceSetupResponse data = attendanceService.getFacultySetup(
-                domain,
-                authentication.getName()
-        );
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        true,
-                        "Faculty setup fetched successfully",
-                        data
-                )
-        );
-    }
 
 
     // =========================================================
     // FACULTY - GET ELIGIBLE STUDENTS
     // =========================================================
 
+    @GetMapping("/faculty/subjects")
+    @PreAuthorize("hasRole('FACULTY')")
+    public ResponseEntity<ApiResponse<List<String>>> getSubjectsForFaculty(
+            @PathVariable String domain,
+            @RequestParam String course,
+            @RequestParam String studyBatch,
+            Authentication authentication
+    ) {
+        List<String> subjects = attendanceService.getSubjectsForFaculty(
+                domain, authentication.getName(), course, studyBatch
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Subjects fetched successfully",
+                        subjects
+                )
+        );
+    }
+
     @GetMapping("/faculty/students")
     @PreAuthorize("hasRole('FACULTY')")
     public ResponseEntity<ApiResponse<List<AttendanceStudentResponse>>> getStudentsForFaculty(
             @PathVariable String domain,
-            @RequestParam String batch,
+            @RequestParam String studyBatch,
+            @RequestParam String course,
             @RequestParam String subject,
             Authentication authentication
     ) {
 
         List<AttendanceStudentResponse> students =
-                attendanceService.getStudentsForFaculty(
-                        domain,
-                        authentication.getName(),
-                        batch,
-                        subject
-                );
+                attendanceService.getStudentsForFaculty( domain, authentication.getName(), course, studyBatch, subject );
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
@@ -114,7 +113,7 @@ public class AttendenceErpController {
     @PreAuthorize("hasRole('FACULTY')")
     public ResponseEntity<ApiResponse<AttendanceExistingResponse>> getExistingAttendance(
             @PathVariable String domain,
-            @RequestParam String batch,
+            @RequestParam String studentBatch,
             @RequestParam String subject,
             @RequestParam String date,
             @RequestParam Integer period,
@@ -123,7 +122,7 @@ public class AttendenceErpController {
         AttendanceExistingResponse data = attendanceService.getExistingAttendance(
                 domain,
                 authentication.getName(),
-                batch,
+                studentBatch,
                 subject,
                 java.time.LocalDate.parse(date),
                 period
@@ -145,18 +144,11 @@ public class AttendenceErpController {
             Authentication authentication
     ) {
 
-        StudentAttendanceResponse attendance =
-                attendanceService.getStudentAttendance(
-                        authentication.getName(),
-                        domain
-                );
+        StudentAttendanceResponse attendance = attendanceService.getStudentAttendance(
+                        authentication.getName(), domain );
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
-                        true,
-                        "Attendance fetched successfully",
-                        attendance
-                )
+                new ApiResponse<>(true, "Attendance fetched successfully", attendance)
         );
     }
 
@@ -219,7 +211,7 @@ public class AttendenceErpController {
     // =========================================================
 
     @GetMapping("/admin/batch")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<List<AttendanceSummaryResponse>>> adminBatch(
             @PathVariable String domain,
             @RequestParam String batch,
@@ -253,7 +245,7 @@ public class AttendenceErpController {
     // =========================================================
 
     @GetMapping("/admin/retention")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<AttendanceRetentionResponse>> getRetention(
             @PathVariable String domain
     ) {
@@ -276,7 +268,7 @@ public class AttendenceErpController {
     // =========================================================
 
     @PutMapping("/admin/retention")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<AttendanceRetentionResponse>> updateRetention(
             @PathVariable String domain,
             @Valid @RequestBody AttendanceRetentionUpdateRequest request,
@@ -306,7 +298,7 @@ public class AttendenceErpController {
     // =========================================================
 
     @DeleteMapping("/admin/cleanup")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<Long>> cleanupAttendanceByDateRange(
             @PathVariable String domain,
             @Valid @RequestBody AttendanceCleanupRequest request,
@@ -336,7 +328,7 @@ public class AttendenceErpController {
     // =========================================================
 
     @DeleteMapping("/admin/{attendanceId}")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<Void>> deleteAttendance(
             @PathVariable String domain,
             @PathVariable Long attendanceId,
@@ -369,8 +361,19 @@ public class AttendenceErpController {
 // DOMAIN ADMIN - FULL ATTENDANCE OVERVIEW (course → batch → student)
 // =========================================================
 
+    @GetMapping("/admin/audit-logs")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
+    public ResponseEntity<ApiResponse<List<ERPActionAudit>>> getAuditLogs(
+            @PathVariable String domain
+    ) {
+        List<ERPActionAudit> auditLogs = auditService.all(domain);
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "ERP activity fetched successfully", auditLogs)
+        );
+    }
+
     @GetMapping("/admin/overview")
-    @PreAuthorize("hasRole('DOMAIN_ADMIN')")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
     public ResponseEntity<ApiResponse<AttendanceOverviewResponse>> getAttendanceOverview(
             @PathVariable String domain,
             @RequestParam(required = false) String course,
@@ -388,6 +391,33 @@ public class AttendenceErpController {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Attendance overview fetched successfully", overview)
         );
+    }
+
+    @GetMapping("/admin/cleanup-preview")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
+    public ResponseEntity<ApiResponse<Long>> previewAttendanceCleanup(
+            @PathVariable String domain,
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        long recordCount = attendanceService.countAttendanceByDateRange(domain, fromDate, toDate);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance cleanup preview calculated", recordCount));
+    }
+
+    @GetMapping("/admin/records")
+    @PreAuthorize("hasRole('DOMAIN_ADMIN') and #domain.equalsIgnoreCase(authentication.principal.domain)")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<AttendanceAdminRecordResponse>>> adminRecords(
+            @PathVariable String domain,
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Page must be non-negative and size must be between 1 and 100");
+        }
+        var records = attendanceService.getAdminRecords(
+                domain, fromDate, toDate, PageRequest.of(page, size));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance records fetched", records));
     }
 
 }
@@ -456,7 +486,6 @@ Faculty course
       ↓
 Student course
 
-Faculty teachingAssignments
       ↓
 requested batch + requested subject
 
@@ -473,21 +502,4 @@ For example:
 Faculty:
 course = BBA
 
-teachingAssignments =
-1A:MANAGEMENT,ACCOUNTING;
-2A:MARKETING,ECONOMICS;
-2C:BUSINESS LAW
-
-If faculty requests:
-
-batch = 2A
-subject = MARKETING
-
-then only students satisfying:
-
-student.course == BBA
-student.studyBatch == 2A
-student.studySubjects contains MARKETING
-
-are returned.
 */

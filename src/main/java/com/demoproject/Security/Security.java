@@ -34,7 +34,9 @@ public class Security {
 
         return httpSecurity
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/","/home_page/**","/{domain}/login_profile/**",
+            .requestMatchers("/uploads/certificates/**").denyAll()
+
+            .requestMatchers("/","/home_page/**","/{domain}/login_profile/**" , "/{domain}/forgot_password/**",
                             "/{domain}/signup/**","/uploads/**","/test/**",
                     "/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**","/v3/api-docs","/webjars/**","/derp_docs/**","/swagger/**"
             ).permitAll()

@@ -20,6 +20,9 @@ public class DomainAdminResponseDTO {
     private LocalDateTime lastUpdateDateTime;
     private LocalDateTime lastLoginDateTime;
 
+    private String role;
+
+
     private String profilePic;// store image path OR base64
 
 

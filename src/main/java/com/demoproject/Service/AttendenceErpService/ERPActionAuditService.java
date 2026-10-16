@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ERPActionAuditService {
@@ -17,7 +19,7 @@ public class ERPActionAuditService {
  public ERPActionAuditService(
          ERPActionAuditRepository repository
  ) {
-  this.repository = repository;
+  this.repository = Objects.requireNonNull(repository, "repository is required");
  }
 
  @Transactional
@@ -30,17 +32,21 @@ public class ERPActionAuditService {
          Long targetId,
          String details
  ) {
+  String normalizedDomain = normalizeRequired(domain, "domain");
+  String normalizedEmail = normalizeRequired(email, "actor email");
+  String normalizedRole = normalizeRequired(role, "actor role");
+  String normalizedAction = normalizeRequired(action, "action");
 
   ERPActionAudit audit =
           new ERPActionAudit();
 
-  audit.setDomain(domain);
-  audit.setActorEmail(email);
-  audit.setRole(role);
-  audit.setAction(action);
-  audit.setTargetType(targetType);
+  audit.setDomain(normalizedDomain);
+  audit.setActorEmail(normalizedEmail);
+  audit.setRole(normalizedRole);
+  audit.setAction(normalizedAction);
+  audit.setTargetType(targetType == null ? null : targetType.trim());
   audit.setTargetId(targetId);
-  audit.setDetails(details);
+  audit.setDetails(details == null ? null : details.trim());
   audit.setCreatedAt(LocalDateTime.now());
 
   repository.save(audit);
@@ -52,6 +58,23 @@ public class ERPActionAuditService {
  ) {
 
   return repository
-          .findByDomainOrderByCreatedAtDesc(domain);
+          .findByDomainIgnoreCaseOrderByCreatedAtDesc(
+                  normalizeRequired(domain, "domain")
+          );
+ }
+
+ @Transactional(readOnly = true)
+ public List<ERPActionAudit> allForRole(String domain, String role) {
+  return repository.findByDomainIgnoreCaseAndRoleIgnoreCaseOrderByCreatedAtDesc(
+          normalizeRequired(domain, "domain"),
+          normalizeRequired(role, "role")
+  );
+ }
+
+ private String normalizeRequired(String value, String fieldName) {
+  if (value == null || value.isBlank()) {
+   throw new IllegalArgumentException(fieldName + " is required");
+  }
+  return value.trim().toLowerCase(Locale.ROOT);
  }
 }

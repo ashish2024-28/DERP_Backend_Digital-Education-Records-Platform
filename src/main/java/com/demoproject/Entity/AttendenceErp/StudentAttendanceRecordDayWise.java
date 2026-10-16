@@ -9,35 +9,26 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(
-        name = "erp_attendance_record",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_attendance_student_subject_date_period",
+                name = "uk_attendance_domain_student_subject_date_period",
                 columnNames = {
+                        "domain",
                         "student_id",
                         "subject",
                         "attendance_date",
                         "period_number"
                 }
-        ),
-        indexes = {
-                @Index(
-                        name = "idx_attendance_student_date",
-                        columnList = "student_id,attendance_date"
-                ),
-                @Index(
-                        name = "idx_attendance_domain_batch_date",
-                        columnList = "domain,study_batch,attendance_date"
-                )
-        }
+        )
 )
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttendanceRecord {
+public class StudentAttendanceRecordDayWise {
 
  @Id
  @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,11 +37,6 @@ public class AttendanceRecord {
  @Column(nullable = false)
  private String domain;
 
- @Column(nullable = false)
- private String teachingBatch;
-
- @Column(nullable = false)
- private String studyBatch;
 
  @Column(nullable = false)
  private String subject;
@@ -60,6 +46,8 @@ public class AttendanceRecord {
          nullable = false
  )
  private LocalDate attendanceDate;
+
+ private LocalTime attendanceTime;
 
  @Column(
          name = "period_number",

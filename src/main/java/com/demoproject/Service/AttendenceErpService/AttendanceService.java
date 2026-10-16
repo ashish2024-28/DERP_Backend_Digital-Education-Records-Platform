@@ -1,22 +1,28 @@
 package com.demoproject.Service.AttendenceErpService;
 
 import com.demoproject.DTO.AttendenceErp.*;
-import com.demoproject.Entity.AttendenceErp.AttendanceAggregate;
-import com.demoproject.Entity.AttendenceErp.AttendanceRecord;
+import com.demoproject.Entity.AttendenceErp.StudentTotalAttendanceSubjectWise;
+import com.demoproject.Entity.AttendenceErp.StudentAttendanceRecordDayWise;
 import com.demoproject.Entity.AttendenceErp.AttendanceRetentionConfig;
 import com.demoproject.Entity.AttendenceErp.AttendanceStatus;
 import com.demoproject.Entity.Faculty;
 import com.demoproject.Entity.Student;
-import com.demoproject.Repository.AttendenceErpRepository.AttendanceAggregateRepository;
-import com.demoproject.Repository.AttendenceErpRepository.AttendanceRecordRepository;
+import com.demoproject.Repository.AttendenceErpRepository.StudentTotalAttendanceSubjectWiseRepository;
+import com.demoproject.Repository.AttendenceErpRepository.StudentAttendanceRecordDayWiseRepository;
 import com.demoproject.Repository.AttendenceErpRepository.AttendanceRetentionConfigRepository;
 import com.demoproject.Repository.FacultyRepository;
 import com.demoproject.Repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,66 +34,93 @@ public class AttendanceService {
     private static final int MIN_RETENTION_MONTHS = 1;
     private static final int MAX_RETENTION_MONTHS = 120;
 
-    private final AttendanceRecordRepository recordRepository;
-    private final AttendanceAggregateRepository aggregateRepository;
+    private final StudentAttendanceRecordDayWiseRepository recordRepository;
+    private final StudentTotalAttendanceSubjectWiseRepository aggregateRepository;
     private final AttendanceRetentionConfigRepository retentionConfigRepository;
     private final StudentRepository studentRepository;
     private final FacultyRepository facultyRepository;
     private final ERPActionAuditService auditService;
 
-    // =========================================================
-    // FACULTY SETUP
-    // =========================================================
-
-    @Transactional(readOnly = true)
-    public FacultyAttendanceSetupResponse getFacultySetup(
-            String domain,
-            String facultyEmail
-    ) {
-        Faculty faculty = findFaculty(domain, facultyEmail);
-
-        return new FacultyAttendanceSetupResponse(
-                normalize(faculty.getCourse()),
-                faculty.getTeachingAssignments() == null
-                        ? ""
-                        : faculty.getTeachingAssignments()
-        );
-    }
 
     // =========================================================
     // GET STUDENTS FOR FACULTY
     // =========================================================
 
     @Transactional(readOnly = true)
-    public List<AttendanceStudentResponse> getStudentsForFaculty(String domain, String facultyEmail, String batch, String subject ) {
+    public List<AttendanceStudentResponse> getStudentsForFaculty(String domain, String facultyEmail, String course, String studyBatch, String subject ) {
 
         Faculty faculty = findFaculty(domain, facultyEmail);
 
-        String requestedBatch = normalize(batch);
+        String requestedBatch = normalize(studyBatch);
         String requestedSubject = normalize(subject);
-
-
-        if (!faculty.teaches(requestedBatch, requestedSubject)) {
-            throw new SecurityException(
-                    "You are not assigned to " + requestedSubject + " for batch " + requestedBatch
-            );
-        }
         String facultyCourse = normalize(faculty.getCourse());
 
+        if (!facultyCourse.equals(normalize(course))) {
+            throw new IllegalArgumentException("Requested course is not assigned to this faculty");
+        }
+
         return studentRepository
-//                .findByDomainAndCourseAndStudyBatchOrderByRollNumberAsc(
                 .findByDomainIgnoreCaseAndCourseIgnoreCaseAndStudyBatchIgnoreCaseOrderByRollNumberAsc(
-                        faculty.getDomain(),facultyCourse,requestedBatch
+                        faculty.getDomain(), facultyCourse, requestedBatch
                 )
                 .stream()
-                .filter(student -> student.studiesSubject(requestedSubject))
+                .filter(student -> parseStudySubjects(student.getStudySubjects()).contains(requestedSubject))
                 .map(student -> new AttendanceStudentResponse(
                         student.getRollNumber(),
                         student.getName(),
                         student.getFatherName(),
-                        student.getStudyBatch(),
-                        student.getBranch()
+                        student.getStudyBatch()
                 ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getSubjectsForFaculty(
+            String domain,
+            String facultyEmail,
+            String course,
+            String studyBatch
+    ) {
+        Faculty faculty = findFaculty(domain, facultyEmail);
+
+        String requestedBatch = normalize(studyBatch);
+        if (!requestedBatch.matches("[1-9][A-Z]")) {
+            throw new IllegalArgumentException(
+                    "Teaching batch must contain a year from 1 to 9 and a section from A to Z"
+            );
+        }
+
+        String facultyCourse = normalize(faculty.getCourse());
+        if (!facultyCourse.equals(normalize(course))) {
+            throw new IllegalArgumentException("Requested course is not assigned to this faculty");
+        }
+
+        return studentRepository
+                .findByDomainIgnoreCaseAndCourseIgnoreCaseAndStudyBatchIgnoreCaseOrderByRollNumberAsc(
+                        faculty.getDomain(), facultyCourse, requestedBatch
+                )
+                .stream()
+                .flatMap(student -> parseStudySubjects(student.getStudySubjects()).stream())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    private List<String> parseStudySubjects(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+
+        String normalized = value
+                .replace("[", "")
+                .replace("]", "")
+                .replace("\"", "")
+                .replace("'", "");
+
+        return Arrays.stream(normalized.split("[,;]"))
+                .map(String::trim)
+                .filter(subject -> !subject.isBlank())
+                .map(this::normalize)
                 .toList();
     }
 
@@ -103,29 +136,27 @@ public class AttendanceService {
             );
         }
 
+        if (request.periodNumber() == null || request.periodNumber() < 1 || request.periodNumber() > 20) {
+            throw new IllegalArgumentException("Period must be between 1 and 20");
+        }
+
+        LocalDate attendanceDate = LocalDate.now();
+        LocalTime attendanceTime = LocalTime.now();
+
         Faculty faculty = findFaculty(domain, facultyEmail);
 
-        String batch = normalize(request.teachingBatch());
+        String studyBatch = normalize(request.studyBatch());
         String subject = normalize(request.subject());
 
-        validateAttendanceDate(request.attendanceDate());
-
-        if (!faculty.teaches(batch, subject)) {
-            throw new SecurityException(
-                    "You are not assigned to "+ subject+ " for batch "+ batch
-            );
-        }
 
         String facultyCourse = normalize(faculty.getCourse());
 
         List<Student> students =
                 studentRepository
-//                        .findByDomainAndCourseAndStudyBatchOrderByRollNumberAsc(
                         .findByDomainIgnoreCaseAndCourseIgnoreCaseAndStudyBatchIgnoreCaseOrderByRollNumberAsc(
-
                                 faculty.getDomain(),
                                 facultyCourse,
-                                batch
+                                studyBatch
                         );
 
         if (students.isEmpty()) {
@@ -142,11 +173,11 @@ public class AttendanceService {
             );
         }
 
-        int processed = 0;
+        Map<String, AttendanceStatus> submittedStatuses = new LinkedHashMap<>();
 
         for (Student student : students) {
 
-            if (!student.studiesSubject(subject)) {
+            if (!parseStudySubjects(student.getStudySubjects()).contains(subject)) {
                 continue;
             }
 
@@ -157,24 +188,55 @@ public class AttendanceService {
                 continue;
             }
 
-            saveAttendance(
-                    faculty,
-                    student,
-                    batch,
-                    subject,
-                    request.attendanceDate(),
-                    request.periodNumber(),
-                    parseStatus(statusValue)
-            );
-
-            processed++;
+            submittedStatuses.put(student.getRollNumber(), parseStatus(statusValue));
         }
 
-        if (processed == 0) {
+        if (submittedStatuses.isEmpty()) {
             throw new IllegalArgumentException(
                     "No valid student attendance was submitted"
             );
         }
+
+        for (Student student : students) {
+            if (!submittedStatuses.containsKey(student.getRollNumber())) {
+                continue;
+            }
+            Optional<StudentAttendanceRecordDayWise> existing =
+                    recordRepository.findByDomainIgnoreCaseAndStudent_IdAndSubjectIgnoreCaseAndAttendanceDateAndPeriodNumber(
+                            faculty.getDomain(),
+                            student.getId(),
+                            subject,
+                            attendanceDate,
+                            request.periodNumber()
+                    );
+            if (existing.isPresent()
+                    && (existing.get().getMarkedBy() == null
+                    || !existing.get().getMarkedBy().getId().equals(faculty.getId()))) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Attendance is already recorded by another teacher for roll number "
+                                + student.getRollNumber()
+                );
+            }
+        }
+
+        for (Student student : students) {
+            AttendanceStatus status = submittedStatuses.get(student.getRollNumber());
+            if (status == null) {
+                continue;
+            }
+            saveAttendance(
+                    faculty,
+                    student,
+                    subject,
+                    attendanceDate,
+                    attendanceTime,
+                    request.periodNumber(),
+                    status
+            );
+        }
+
+        int processed = submittedStatuses.size();
 
         auditService.log(
                 faculty.getDomain(),
@@ -183,9 +245,9 @@ public class AttendanceService {
                 "MARK_ATTENDANCE",
                 "ATTENDANCE",
                 null,
-                "Batch=" + batch
+                "Batch=" + studyBatch
                         + ", Subject=" + subject
-                        + ", Date=" + request.attendanceDate()
+                        + ", DateTime=" + attendanceDate +" "+ attendanceTime
                         + ", Period=" + request.periodNumber()
                         + ", Students=" + processed
         );
@@ -198,16 +260,17 @@ public class AttendanceService {
     private void saveAttendance(
             Faculty faculty,
             Student student,
-            String batch,
             String subject,
             LocalDate date,
+            LocalTime time,
             Integer periodNumber,
             AttendanceStatus newStatus
     ) {
 
-        Optional<AttendanceRecord> existing =
+        Optional<StudentAttendanceRecordDayWise> existing =
                 recordRepository
-                        .findByStudent_IdAndSubjectAndAttendanceDateAndPeriodNumber(
+                        .findByDomainIgnoreCaseAndStudent_IdAndSubjectIgnoreCaseAndAttendanceDateAndPeriodNumber(
+                                faculty.getDomain(),
                                 student.getId(),
                                 subject,
                                 date,
@@ -215,74 +278,59 @@ public class AttendanceService {
                         );
 
         if (existing.isPresent()) {
+            StudentAttendanceRecordDayWise existingRecord = existing.get();
+            if (existingRecord.getMarkedBy() == null
+                    || !existingRecord.getMarkedBy().getId().equals(faculty.getId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Attendance was already recorded by another teacher"
+                );
+            }
 
-            AttendanceRecord record = existing.get();
-
-            AttendanceStatus oldStatus = record.getStatus();
-
+            AttendanceStatus oldStatus = existingRecord.getStatus();
             if (oldStatus == newStatus) {
                 return;
             }
 
-            record.setStatus(newStatus);
-            record.setMarkedBy(faculty);
+            existingRecord.setStatus(newStatus);
+            existingRecord.setAttendanceTime(time);
+            recordRepository.save(existingRecord);
 
-            recordRepository.save(record);
-
-            AttendanceAggregate aggregate =
-                    getOrCreateAggregate(
-                            student,
-                            subject,
-                            faculty.getDomain()
-                    );
-
+            StudentTotalAttendanceSubjectWise aggregate =
+                    getOrCreateAggregate(student, subject, faculty.getDomain());
             if (oldStatus == AttendanceStatus.PRESENT) {
-
-                aggregate.setPresentCount(
-                        Math.max(
-                                0,
-                                aggregate.getPresentCount() - 1
-                        )
-                );
-
-                aggregate.setAbsentCount(
-                        aggregate.getAbsentCount() + 1
-                );
-
+                aggregate.setPresentCount(Math.max(0, aggregate.getPresentCount() - 1));
+                aggregate.setAbsentCount(aggregate.getAbsentCount() + 1);
             } else {
-
-                aggregate.setAbsentCount(
-                        Math.max(
-                                0,
-                                aggregate.getAbsentCount() - 1
-                        )
-                );
-
-                aggregate.setPresentCount(
-                        aggregate.getPresentCount() + 1
-                );
+                aggregate.setAbsentCount(Math.max(0, aggregate.getAbsentCount() - 1));
+                aggregate.setPresentCount(aggregate.getPresentCount() + 1);
             }
-
             aggregateRepository.save(aggregate);
-
             return;
         }
 
-        AttendanceRecord record = new AttendanceRecord();
+        StudentAttendanceRecordDayWise record = new StudentAttendanceRecordDayWise();
 
         record.setDomain(faculty.getDomain());
-        record.setTeachingBatch(batch);
-        record.setStudyBatch(student.getStudyBatch());
         record.setSubject(subject);
         record.setAttendanceDate(date);
+        record.setAttendanceTime(time);
         record.setPeriodNumber(periodNumber);
         record.setStatus(newStatus);
         record.setStudent(student);
         record.setMarkedBy(faculty);
 
-        recordRepository.save(record);
+        try {
+            recordRepository.saveAndFlush(record);
+        } catch (DataIntegrityViolationException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Attendance was recorded by another teacher for this student, subject, date, and period",
+                    exception
+            );
+        }
 
-        AttendanceAggregate aggregate =
+        StudentTotalAttendanceSubjectWise aggregate =
                 getOrCreateAggregate(
                         student,
                         subject,
@@ -317,7 +365,7 @@ public class AttendanceService {
     public AttendanceExistingResponse getExistingAttendance(
             String domain,
             String facultyEmail,
-            String batch,
+            String studentBatch,
             String subject,
             LocalDate date,
             Integer periodNumber
@@ -325,35 +373,31 @@ public class AttendanceService {
 
         Faculty faculty = findFaculty(domain, facultyEmail);
 
-        String normalizedBatch = normalize(batch);
+        String normalizedBatch = normalize(studentBatch);
         String normalizedSubject = normalize(subject);
-
-        if (!faculty.teaches(normalizedBatch, normalizedSubject)) {
-            throw new SecurityException(
-                    "You are not assigned to " + normalizedSubject + " for batch " + normalizedBatch
-            );
-        }
 
         if (date == null) {
             throw new IllegalArgumentException("Attendance date is required");
         }
 
-        if (periodNumber == null || periodNumber < 1) {
-            throw new IllegalArgumentException("Valid period is required");
+        if (periodNumber == null || periodNumber < 1 || periodNumber > 20) {
+            throw new IllegalArgumentException("Period must be between 1 and 20");
         }
 
-        List<AttendanceRecord> existingRecords =
-                recordRepository.findByDomainAndTeachingBatchAndSubjectAndAttendanceDateAndPeriodNumber(
+        List<StudentAttendanceRecordDayWise> existingRecords =
+                recordRepository.findByDomainAndSubjectAndAttendanceDateAndPeriodNumber(
                         faculty.getDomain(),
-                        normalizedBatch,
                         normalizedSubject,
                         date,
                         periodNumber
-                );
+                ).stream()
+                .filter(record -> normalize(record.getStudent().getStudyBatch()).equals(normalizedBatch))
+                .filter(record -> normalize(record.getStudent().getCourse()).equals(normalize(faculty.getCourse())))
+                .toList();
 
         Map<String, String> attendanceMap = new LinkedHashMap<>();
 
-        for (AttendanceRecord record : existingRecords) {
+        for (StudentAttendanceRecordDayWise record : existingRecords) {
             attendanceMap.put(
                     record.getStudent().getRollNumber(),
                     record.getStatus().name().equals("PRESENT") ? "P" : "A"
@@ -370,23 +414,24 @@ public class AttendanceService {
     // AGGREGATE
     // =========================================================
 
-    private AttendanceAggregate getOrCreateAggregate(
+    private StudentTotalAttendanceSubjectWise getOrCreateAggregate(
             Student student,
             String subject,
             String domain
     ) {
 
         return aggregateRepository
-                .findByStudent_IdAndSubject(
+                .findByDomainIgnoreCaseAndStudent_IdAndSubject(
+                        normalizeDomain(domain),
                         student.getId(),
                         subject
                 )
                 .orElseGet(() -> {
 
-                    AttendanceAggregate aggregate =
-                            new AttendanceAggregate();
+                    StudentTotalAttendanceSubjectWise aggregate =
+                            new StudentTotalAttendanceSubjectWise();
 
-                    aggregate.setDomain(domain);
+                    aggregate.setDomain(normalizeDomain(domain));
                     aggregate.setSubject(subject);
                     aggregate.setStudent(student);
 
@@ -399,10 +444,7 @@ public class AttendanceService {
     // =========================================================
 
     @Transactional(readOnly = true)
-    public StudentAttendanceResponse getStudentAttendance(
-            String email,
-            String domain
-    ) {
+    public StudentAttendanceResponse getStudentAttendance(String email, String domain) {
 
         String normalizedDomain =
                 normalizeDomain(domain);
@@ -418,25 +460,14 @@ public class AttendanceService {
             );
         }
 
-        Student student =
-                studentRepository
-                        .findByEmail(normalizedEmail)
-                        .filter(
-                                s -> normalizedDomain
-                                        .equalsIgnoreCase(
-                                                s.getDomain()
-                                        )
-                        )
-                        .orElseThrow(() ->
+        Student student = studentRepository.findByEmailAndDomain(normalizedEmail,normalizedDomain)
+                       .orElseThrow(() ->
                                 new SecurityException(
                                         "Student account does not belong to this domain"
                                 )
-                        );
+                       );
 
-        return buildStudentAttendance(
-                student,
-                normalizedDomain
-        );
+        return buildStudentAttendance(student, normalizedDomain);
     }
 
     // =========================================================
@@ -474,20 +505,11 @@ public class AttendanceService {
     // BUILD STUDENT ATTENDANCE
     // =========================================================
 
-    private StudentAttendanceResponse buildStudentAttendance(
-            Student student,
-            String domain
-    ) {
+    private StudentAttendanceResponse buildStudentAttendance( Student student, String domain ) {
 
-        List<String> subjects =
-                student.getStudySubjectsList();
+        List<String> subjects = student.getStudySubjectsList();
 
-        List<AttendanceAggregate> aggregates =
-                aggregateRepository
-                        .findByDomainAndStudent_Id(
-                                domain,
-                                student.getId()
-                        );
+        List<StudentTotalAttendanceSubjectWise> aggregates = aggregateRepository.findByDomainAndStudent_Id(domain, student.getId() );
 
         List<AttendanceSummaryResponse> summaries =
                 aggregates
@@ -496,7 +518,6 @@ public class AttendanceService {
                                 new AttendanceSummaryResponse(
                                         student.getName(),
                                         student.getRollNumber(),
-                                        null,
                                         student.getStudyBatch(),
                                         aggregate.getSubject(),
                                         aggregate.getTotalClasses(),
@@ -510,15 +531,11 @@ public class AttendanceService {
                         )
                         .toList();
 
-        LocalDate fromDate =
-                LocalDate.now().minusDays(6);
+
 
         List<AttendanceDayResponse> recent =
                 recordRepository
-                        .findByStudent_IdAndAttendanceDateGreaterThanEqualOrderByAttendanceDateDesc(
-                                student.getId(),
-                                fromDate
-                        )
+                        .findByStudent_Id(student.getId())
                         .stream()
                         .filter(record ->
                                 domain.equalsIgnoreCase(
@@ -539,7 +556,6 @@ public class AttendanceService {
                 student.getName(),
                 student.getRollNumber(),
                 student.getCourse(),
-                student.getBranch(),
                 student.getBatch(),
                 student.getStudyBatch(),
                 subjects,
@@ -554,15 +570,12 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<AttendanceSummaryResponse> getBatchAttendance(
-            String domain,
-            String batch
+            String domain, String batch
     ) {
 
-        String normalizedDomain =
-                normalizeDomain(domain);
+        String normalizedDomain = normalizeDomain(domain);
 
-        String normalizedBatch =
-                normalize(batch);
+        String normalizedBatch = normalize(batch);
 
         List<Student> students =
                 studentRepository
@@ -588,7 +601,6 @@ public class AttendanceService {
                                             student.getRollNumber(),
                                             normalizedBatch,
                                             student.getStudyBatch(),
-                                            aggregate.getSubject(),
                                             aggregate.getTotalClasses(),
                                             aggregate.getPresentCount(),
                                             aggregate.getAbsentCount(),
@@ -619,27 +631,24 @@ public class AttendanceService {
         String normalizedDomain =
                 normalizeDomain(domain);
 
-        AttendanceRecord record =
+        StudentAttendanceRecordDayWise record =
                 recordRepository
                         .findById(attendanceId)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Attendance record not found"
-                                )
-                        );
+                                .orElseThrow(() -> new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Attendance record not found"));
 
         if (record.getDomain() == null ||
                 !record.getDomain()
                         .equalsIgnoreCase(normalizedDomain)) {
 
-            throw new SecurityException(
-                    "Attendance belongs to another domain"
-            );
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Attendance belongs to another domain");
         }
 
-        AttendanceAggregate aggregate =
+        StudentTotalAttendanceSubjectWise aggregate =
                 aggregateRepository
-                        .findByStudent_IdAndSubject(
+                        .findByDomainIgnoreCaseAndStudent_IdAndSubject(
+                                normalizedDomain,
                                 record.getStudent().getId(),
                                 record.getSubject()
                         )
@@ -781,6 +790,45 @@ public class AttendanceService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public Page<AttendanceAdminRecordResponse> getAdminRecords(
+            String domain, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
+        String normalizedDomain = normalizeDomain(domain);
+        validateDateRange(fromDate, toDate);
+        return recordRepository
+                .findByDomainAndAttendanceDateBetweenOrderByAttendanceDateDescPeriodNumberAsc(
+                        normalizedDomain, fromDate, toDate, pageable)
+                .map(record -> new AttendanceAdminRecordResponse(
+                        record.getId(),
+                        record.getStudent().getName(),
+                        record.getStudent().getRollNumber(),
+                        record.getStudent().getCourse(),
+                        record.getStudent().getStudyBatch(),
+                        record.getSubject(),
+                        record.getAttendanceDate(),
+                        record.getPeriodNumber(),
+                        record.getStatus().name(),
+                        record.getMarkedBy() == null ? null : record.getMarkedBy().getName()));
+    }
+
+    @Transactional(readOnly = true)
+    public long countAttendanceByDateRange(String domain, LocalDate fromDate, LocalDate toDate) {
+        String normalizedDomain = normalizeDomain(domain);
+        validateDateRange(fromDate, toDate);
+        return recordRepository.countByDomainAndAttendanceDateBetween(normalizedDomain, fromDate, toDate);
+    }
+
+    private void validateDateRange(LocalDate fromDate, LocalDate toDate) {
+        if (fromDate == null || toDate == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "From date and to date are required");
+        }
+        if (fromDate.isAfter(toDate)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "From date cannot be after to date");
+        }
+    }
+
     private AttendanceRetentionConfig
     getOrCreateRetentionConfig(String domain) {
 
@@ -890,17 +938,7 @@ public class AttendanceService {
         String normalizedDomain =
                 normalizeDomain(domain);
 
-        if (fromDate == null || toDate == null) {
-            throw new IllegalArgumentException(
-                    "From date and to date are required"
-            );
-        }
-
-        if (fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException(
-                    "From date cannot be after to date"
-            );
-        }
+        validateDateRange(fromDate, toDate);
 
         long deleted =
                 recordRepository
@@ -944,7 +982,7 @@ public class AttendanceService {
             String domain
     ) {
 
-        List<AttendanceRecord> records =
+        List<StudentAttendanceRecordDayWise> records =
                 recordRepository
                         .findByDomainOrderByAttendanceDateAsc(
                                 domain
@@ -952,7 +990,7 @@ public class AttendanceService {
 
         aggregateRepository.deleteByDomain(domain);
 
-        Map<String, List<AttendanceRecord>> grouped =
+        Map<String, List<StudentAttendanceRecordDayWise>> grouped =
                 records.stream()
                         .collect(
                                 Collectors.groupingBy(
@@ -966,14 +1004,14 @@ public class AttendanceService {
                                 )
                         );
 
-        for (List<AttendanceRecord> group :
+        for (List<StudentAttendanceRecordDayWise> group :
                 grouped.values()) {
 
-            AttendanceRecord first =
+            StudentAttendanceRecordDayWise first =
                     group.get(0);
 
-            AttendanceAggregate aggregate =
-                    new AttendanceAggregate();
+            StudentTotalAttendanceSubjectWise aggregate =
+                    new StudentTotalAttendanceSubjectWise();
 
             aggregate.setDomain(domain);
             aggregate.setSubject(
@@ -1063,7 +1101,7 @@ public class AttendanceService {
 
         for (Student student : students) {
 
-            List<AttendanceAggregate> aggregates =
+            List<StudentTotalAttendanceSubjectWise> aggregates =
                     aggregateRepository.findByDomainAndStudent_Id(
                             normalizedDomain, student.getId()
                     );
@@ -1076,7 +1114,6 @@ public class AttendanceService {
                     .map(agg -> new AttendanceSummaryResponse(
                             student.getName(),
                             student.getRollNumber(),
-                            null,
                             student.getStudyBatch(),
                             agg.getSubject(),
                             agg.getTotalClasses(),
@@ -1086,15 +1123,14 @@ public class AttendanceService {
                     ))
                     .toList();
 
-            long studentTotal = aggregates.stream().mapToLong(AttendanceAggregate::getTotalClasses).sum();
-            long studentPresent = aggregates.stream().mapToLong(AttendanceAggregate::getPresentCount).sum();
-            long studentAbsent = aggregates.stream().mapToLong(AttendanceAggregate::getAbsentCount).sum();
+            long studentTotal = aggregates.stream().mapToLong(StudentTotalAttendanceSubjectWise::getTotalClasses).sum();
+            long studentPresent = aggregates.stream().mapToLong(StudentTotalAttendanceSubjectWise::getPresentCount).sum();
+            long studentAbsent = aggregates.stream().mapToLong(StudentTotalAttendanceSubjectWise::getAbsentCount).sum();
 
             AttendanceStudentSummaryResponse studentSummary = new AttendanceStudentSummaryResponse(
                     student.getRollNumber(),
                     student.getName(),
                     student.getFatherName(),
-                    student.getBranch(),
                     subjectSummaries,
                     studentTotal,
                     studentPresent,
@@ -1186,7 +1222,7 @@ public class AttendanceService {
 
         LocalDate fromDate = LocalDate.now().minusDays(6);
 
-        List<AttendanceRecord> records =
+        List<StudentAttendanceRecordDayWise> records =
                 recordRepository
                         .findByDomainAndMarkedBy_IdAndAttendanceDateGreaterThanEqualOrderByAttendanceDateDescPeriodNumberAsc(
                                 faculty.getDomain(),
@@ -1195,19 +1231,19 @@ public class AttendanceService {
                         );
 
         // teachingBatch -> subject -> "date|period" -> records
-        Map<String, Map<String, Map<String, List<AttendanceRecord>>>> grouped =
+        Map<String, Map<String, Map<String, List<StudentAttendanceRecordDayWise>>>> grouped =
                 new LinkedHashMap<>();
 
-        for (AttendanceRecord record : records) {
-
-            String sessionKey = record.getAttendanceDate() + "|" + record.getPeriodNumber();
-
-            grouped
-                    .computeIfAbsent(record.getTeachingBatch(), k -> new LinkedHashMap<>())
-                    .computeIfAbsent(record.getSubject(), k -> new LinkedHashMap<>())
-                    .computeIfAbsent(sessionKey, k -> new ArrayList<>())
-                    .add(record);
-        }
+//        for (StudentAttendanceRecordDayWise record : records) {
+//
+//            String sessionKey = record.getAttendanceDate() + "|" + record.getPeriodNumber();
+//
+//            grouped
+////                    .computeIfAbsent(record.getTeachingBatch() , k -> new LinkedHashMap<>())
+//                    .computeIfAbsent(record.getSubject(), k -> new LinkedHashMap<>())
+//                    .computeIfAbsent(sessionKey, k -> new ArrayList<>())
+//                    .add(record);
+//        }
 
         List<RecentBatchGroupResponse> batchGroups = new ArrayList<>();
 
@@ -1221,7 +1257,7 @@ public class AttendanceService {
 
                 for (var sessionEntry : subjectEntry.getValue().entrySet()) {
 
-                    List<AttendanceRecord> sessionRecords = sessionEntry.getValue();
+                    List<StudentAttendanceRecordDayWise> sessionRecords = sessionEntry.getValue();
                     String[] parts = sessionEntry.getKey().split("\\|");
                     LocalDate date = LocalDate.parse(parts[0]);
                     Integer period = Integer.valueOf(parts[1]);
@@ -1302,22 +1338,7 @@ public class AttendanceService {
                 );
     }
 
-    private void validateAttendanceDate(
-            LocalDate date
-    ) {
 
-        if (date == null) {
-            throw new IllegalArgumentException(
-                    "Attendance date is required"
-            );
-        }
-
-        if (date.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException(
-                    "Future attendance is not allowed"
-            );
-        }
-    }
 
 
 

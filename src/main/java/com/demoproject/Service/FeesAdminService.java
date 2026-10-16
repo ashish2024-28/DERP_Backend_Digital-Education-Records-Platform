@@ -1,9 +1,11 @@
 package com.demoproject.Service;
 
 
+import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminResponseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminSignupDTO;
 import com.demoproject.DTO.LoginRequestDTO;
+import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.Entity.*;
 import com.demoproject.Repository.*;
 import org.modelmapper.ModelMapper;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,6 +23,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -43,6 +47,9 @@ public class FeesAdminService {
     //  Login by domain + email + Password
     public FeesAdmin LoginFessAdmin(LoginRequestDTO loginRequestDTO){
         FeesAdmin feesAdminLogin = feesAdminRepository.findByEmailAndDomain(loginRequestDTO.getEmail(), loginRequestDTO.getDomain()).orElse(null);
+        if (feesAdminLogin == null) {
+            return null;
+        }
         boolean passwordMatch = passwordEncoder.matches(loginRequestDTO.getPassword() ,feesAdminLogin.getPassword());
 
         if (passwordMatch) {
@@ -150,9 +157,11 @@ public class FeesAdminService {
     }
 
     // ------ UPDATE FeesAdmin Profile by Email  ------
-    public FeesAdmin updateFeesAdminByEmail(String domain, FeesAdmin newData){
-        FeesAdmin old = feesAdminRepository.findByFeesAdminIdAndDomain(newData.getEmail(), domain);
-        if (old == null) return null;
+    public FeesAdminResponseDTO updateFeesAdminByEmail(String domain, String email, FeesAdmin newData){
+        FeesAdmin old = feesAdminRepository.findByEmailAndDomain(email, domain).orElse(null);
+        if (old == null) {
+            throw new IllegalArgumentException("Fees Admin not found.");
+        }
 
         if (newData.getName() != null)
             old.setName(newData.getName());
@@ -160,13 +169,36 @@ public class FeesAdminService {
         if (newData.getMobileNumber() != null)
             old.setMobileNumber(newData.getMobileNumber());
 
-        if (newData.getEmail() != null)
-            old.setEmail(newData.getEmail());
+        FeesAdmin saved = feesAdminRepository.save(old);
+        FeesAdminResponseDTO response = modelMapper.map(saved, FeesAdminResponseDTO.class);
+        if (saved.getUniversity() != null) {
+            response.setUniversityName(saved.getUniversity().getUniversityName());
+        }
+        return response;
+    }
 
-        if (newData.getFeesAdminId() != null)
-            old.setFeesAdminId(newData.getFeesAdminId());
+    public FeesAdminResponseDTO updateFeesAdminByEmail(String domain, FeesAdmin newData) {
+        if (newData.getEmail() == null || newData.getEmail().isBlank()) {
+            return null;
+        }
+        FeesAdmin old = feesAdminRepository.findByEmailAndDomain(newData.getEmail(), domain).orElse(null);
+        if (old == null) {
+            return null;
+        }
 
-        return feesAdminRepository.save(old);
+        if (newData.getName() != null) {
+            old.setName(newData.getName());
+        }
+        if (newData.getMobileNumber() != null) {
+            old.setMobileNumber(newData.getMobileNumber());
+        }
+
+        FeesAdmin saved = feesAdminRepository.save(old);
+        FeesAdminResponseDTO response = modelMapper.map(saved, FeesAdminResponseDTO.class);
+        if (saved.getUniversity() != null) {
+            response.setUniversityName(saved.getUniversity().getUniversityName());
+        }
+        return response;
     }
 
 
@@ -181,6 +213,72 @@ public class FeesAdminService {
 
 
 
+    // Get subAdmin with profile
+    @Transactional(readOnly = true)
+    public FeesAdminResponseDTO getFeesWithProfile(String domain , String email , Set<String> roles) {
+        FeesAdmin feesAdmin = feesAdminRepository.findByEmailIgnoreCaseAndDomainIgnoreCase(email, domain)
+                .orElseThrow(() -> new IllegalArgumentException("Fees Admin profile not found."));
+        FeesAdminResponseDTO feesAdminResponseDTO = new FeesAdminResponseDTO();
+        feesAdminResponseDTO.setName(feesAdmin.getName());
+        feesAdminResponseDTO.setEmail(feesAdmin.getEmail());
+        feesAdminResponseDTO.setMobileNumber(feesAdmin.getMobileNumber());
+        feesAdminResponseDTO.setProfilePic(feesAdmin.getProfilePic());
+        feesAdminResponseDTO.setRole(feesAdmin.getRole() == null ? null : feesAdmin.getRole().name());
+        feesAdminResponseDTO.setCreatedDateTime(feesAdmin.getCreatedDateTime());
+        feesAdminResponseDTO.setLastUpdateDateTime(feesAdmin.getLastUpdateDateTime());
+        feesAdminResponseDTO.setLastLoginDateTime(feesAdmin.getLastLoginDateTime());
+        feesAdminResponseDTO.setFeesAdminId(feesAdmin.getFeesAdminId());
+        if (feesAdmin.getUniversity() != null) {
+            feesAdminResponseDTO.setUniversityName(feesAdmin.getUniversity().getUniversityName());
+        }
+
+        // DOMAIN_ADMIN -> everything
+        if (roles.contains("ROLE_DOMAIN_ADMIN")) {
+            return feesAdminResponseDTO;
+        }
+
+        // FEES_ADMIN -> only fees related fields
+        if (roles.contains("ROLE_FEES_ADMIN")) {
+
+
+            // Certificate hide
+//            student.setCertifications(null);
+
+            // Attendance hide
+//            student.setStudentAttendanceRecordDayWises(null);
+//            student.setStudentTotalAttendanceSubjectWise(null);
+
+            // Fees remain available
+            // student.getFeesPayments()
+            // student.getFeesAccount()
+
+            return feesAdminResponseDTO;
+        }
+
+        // FACULTY / SUB_ADMIN -> fees fields hide
+        if (roles.contains("ROLE_FACULTY")
+                || roles.contains("ROLE_SUB_ADMIN")) {
+
+
+//            // Fees hide
+//            student.setFeesPayments(null);
+//            student.setFeesAccount(null);
+
+            return feesAdminResponseDTO;
+        }
+//
+//        // Any other role -> hide sensitive fields
+//
+//        student.setCertifications(null);
+//
+//        student.setFeesPayments(null);
+//        student.setFeesAccount(null);
+//
+//        student.setStudentAttendanceRecordDayWises(null);
+//        student.setStudentTotalAttendanceSubjectWise(null);
+
+        return feesAdminResponseDTO;
+    }
+
 
 }
-

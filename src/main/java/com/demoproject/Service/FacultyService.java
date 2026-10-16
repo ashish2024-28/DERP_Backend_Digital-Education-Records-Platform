@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.demoproject.Entity.*;
@@ -25,6 +26,7 @@ import com.demoproject.Repository.FacultyRepository;
 import com.demoproject.Repository.UniversityRepo;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -69,16 +71,16 @@ public class FacultyService {
 
     // login when frontend send jwt token
     public FacultyResponseDTO getFacultyByEmailAndDomain(String email, String domain) {
-        Faculty facultyLogin = frepo.findByEmailAndDomain(email,domain).orElseThrow();
+        Faculty facultyLogin = frepo.findByEmailAndDomain(email, domain).orElseThrow();
 
         // set lastLoginDateTime
         LocalDateTime lastLogin = facultyLogin.getLastLoginDateTime();
 
         facultyLogin.setLastLoginDateTime(LocalDateTime.now());
-        facultyLogin =  frepo.save(facultyLogin);
+        facultyLogin = frepo.save(facultyLogin);
 
         facultyLogin.setLastLoginDateTime(lastLogin);
-        FacultyResponseDTO responseDTO = modelMapper.map(facultyLogin, FacultyResponseDTO.class) ;
+        FacultyResponseDTO responseDTO = modelMapper.map(facultyLogin, FacultyResponseDTO.class);
 
         responseDTO.setLastLoginDateTime(lastLogin);
         return responseDTO;
@@ -86,26 +88,25 @@ public class FacultyService {
 
 
     //    updata profile picture
-    public String updateProfilePic(String domain,String email, MultipartFile file) throws IOException {
+    public String updateProfilePic(String domain, String email, MultipartFile file) throws IOException {
 
-        Faculty faculty= frepo.findByDomainAndEmail(domain ,email);
+        Faculty faculty = frepo.findByDomainAndEmail(domain, email);
 
         String uploadDir = "uploads/profile/";
         Files.createDirectories(Paths.get(uploadDir));
 
-        String fileName = System.currentTimeMillis()+"_"+file.getOriginalFilename();
+        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
-        Path path = Paths.get(uploadDir,fileName);
+        Path path = Paths.get(uploadDir, fileName);
 
-        Files.write(path,file.getBytes());
+        Files.write(path, file.getBytes());
 
-        faculty.setProfilePic(uploadDir+fileName);
+        faculty.setProfilePic(uploadDir + fileName);
 
         frepo.save(faculty);
 
-        return uploadDir+fileName;
+        return uploadDir + fileName;
     }
-
 
 
     // ---- CREATE ------
@@ -114,7 +115,7 @@ public class FacultyService {
         Faculty requesFaculty = modelMapper.map(facultySignupDTO, Faculty.class);
 
         boolean emailExist = baseUserService.existsUserByEmail(facultySignupDTO.getEmail());
-        if(emailExist){
+        if (emailExist) {
             throw new RuntimeException("User Exist Please Try Another Email Id.");
         }
 
@@ -123,16 +124,22 @@ public class FacultyService {
         requesFaculty.setDomain(domain);
         requesFaculty.setUniversity(university);
 
-        if( frepo.existsByFacultyIdAndDomain(requesFaculty.getFacultyId(),requesFaculty.getDomain()) ){    throw new RuntimeException("Faculty's Id field are already exist. ");  }
-        if( frepo.existsByDomainAndEmail(requesFaculty.getDomain(),requesFaculty.getEmail()) ){    throw new RuntimeException("Faculty's Email field are already exist. ");  }
-        if( frepo.existsByEmail(requesFaculty.getEmail())){ throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");  }
+        if (frepo.existsByFacultyIdAndDomain(requesFaculty.getFacultyId(), requesFaculty.getDomain())) {
+            throw new RuntimeException("Faculty's Id field are already exist. ");
+        }
+        if (frepo.existsByDomainAndEmail(requesFaculty.getDomain(), requesFaculty.getEmail())) {
+            throw new RuntimeException("Faculty's Email field are already exist. ");
+        }
+        if (frepo.existsByEmail(requesFaculty.getEmail())) {
+            throw new RuntimeException("Enter Unique Email Id or Another Email Id . ");
+        }
 
         // for security use passwordEncoder
         requesFaculty.setPassword(passwordEncoder.encode(requesFaculty.getPassword()));
 
         requesFaculty.setRole(Role.FACULTY);
         Faculty save = frepo.save(requesFaculty);
-        return save.getName() + ",\nYou Account is Created Successfully.\nFaculty Id : " + save.getFacultyId() ;
+        return save.getName() + ",\nYou Account is Created Successfully.\nFaculty Id : " + save.getFacultyId();
 
     }
 
@@ -140,7 +147,6 @@ public class FacultyService {
     public long getFacultyCount(String domain) {
         return frepo.countByUniversity_Domain(domain);
     }
-
 
 
     // ------ READ ALL faculty for specific university ------
@@ -154,11 +160,11 @@ public class FacultyService {
 
 
     // Update Password or Forget Password
-    public boolean updatePasswordByEmail(String domain, String email, String newPass ) {
+    public boolean updatePasswordByEmail(String domain, String email, String newPass) {
         Faculty old = frepo.findByEmailAndDomain(email, domain).orElse(null);
         if (old == null) return false;
 
-        old.setPassword(newPass);
+        old.setPassword(passwordEncoder.encode(newPass));
         frepo.save(old);
         return true;
 
@@ -181,9 +187,6 @@ public class FacultyService {
         if (newData.getCourse() != null)
             old.setCourse(newData.getCourse());
 
-        if (newData.getTeachingAssignments() != null)
-            old.setTeachingAssignments(newData.getTeachingAssignments());
-
 
         frepo.save(old);
         return true;
@@ -195,7 +198,7 @@ public class FacultyService {
         Faculty f = frepo.findByEmailAndDomain(email, domain).orElse(null);
         if (f != null) {
             frepo.delete(f);
-            return "Deleted faculty with email id " + email ;
+            return "Deleted faculty with email id " + email;
         }
         return "Invalid faculty email";
 
@@ -235,5 +238,61 @@ public class FacultyService {
 //    }
 
 
+    // Get subAdmin with profile
+    @Transactional(readOnly = true)
+    public FacultyResponseDTO getFacultyWithProfile(String domain, String email, Set<String> roles) {
 
+        Faculty faculty = frepo.findByEmailIgnoreCaseAndDomainIgnoreCase(email, domain)
+                .orElseThrow(() -> new IllegalArgumentException("Faculty profile not found."));
+        FacultyResponseDTO facultyResponseDTO = new FacultyResponseDTO();
+        facultyResponseDTO.setName(faculty.getName());
+        facultyResponseDTO.setEmail(faculty.getEmail());
+        facultyResponseDTO.setMobileNumber(faculty.getMobileNumber());
+        facultyResponseDTO.setProfilePic(faculty.getProfilePic());
+        facultyResponseDTO.setRole(faculty.getRole() == null ? null : faculty.getRole().name());
+        facultyResponseDTO.setCreatedDateTime(faculty.getCreatedDateTime());
+        facultyResponseDTO.setLastUpdateDateTime(faculty.getLastUpdateDateTime());
+        facultyResponseDTO.setLastLoginDateTime(faculty.getLastLoginDateTime());
+        facultyResponseDTO.setFacultyId(faculty.getFacultyId());
+        facultyResponseDTO.setCourse(faculty.getCourse());
+
+
+        // DOMAIN_ADMIN -> everything
+        if (roles.contains("ROLE_DOMAIN_ADMIN")) {
+            return facultyResponseDTO;
+        }
+
+        // FEES_ADMIN -> only fees related fields
+        if (roles.contains("ROLE_FEES_ADMIN")) {
+
+
+            // Certificate hide
+//            student.setCertifications(null);
+
+            // Attendance hide
+//            student.setStudentAttendanceRecordDayWises(null);
+//            student.setStudentTotalAttendanceSubjectWise(null);
+
+            // Fees remain available
+            // student.getFeesPayments()
+            // student.getFeesAccount()
+
+            return facultyResponseDTO;
+        }
+
+        // FACULTY / SUB_ADMIN -> fees fields hide
+        if (roles.contains("ROLE_FACULTY")
+                || roles.contains("ROLE_SUB_ADMIN")) {
+
+
+//            // Fees hide
+//            student.setFeesPayments(null);
+//            student.setFeesAccount(null);
+
+            return facultyResponseDTO;
+
+        }
+        return facultyResponseDTO;
+
+    }
 }

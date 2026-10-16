@@ -6,13 +6,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.demoproject.DTO.ApiResponse;
 import com.demoproject.DTO.BulkUpload.BulkUploadResultDTO;
+import com.demoproject.DTO.FeesAccount.DomainAdmin.FeesCourseWiseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminResponseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminSignupDTO;
+import com.demoproject.DTO.StudentDTO.StudentResponseWithProfileDTO;
 import com.demoproject.Entity.*;
 import com.demoproject.Service.*;
+import com.demoproject.Service.AttendenceErpService.ERPActionAuditService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.demoproject.DTO.FacultyDTO.FacultyResponseDTO;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
-import com.demoproject.DTO.StudentDTO.StudentResponseDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
@@ -58,7 +62,8 @@ public class DomainAdminController {
     private FeesAdminService feesAdminService;
     @Autowired
     private UniversityService universityService;
-
+    @Autowired
+    private ERPActionAuditService erpActionAuditService;
 
     @GetMapping
     public ResponseEntity<?> getDomainAdminAndUniversity(@PathVariable String domain) {
@@ -75,12 +80,14 @@ public class DomainAdminController {
         long totalFaculty = facultyService.getFacultyCount(domain);
         long totalSubAdmin = subAdminService.getSubAdminCount(domain);
         long totalFeesAdmin = feesAdminService.getFeesAdminCount(domain);
+        long totalFeesCourseWise = domainAdminService.getCourseCount(domain);
 
         Map<String, Long> response = new HashMap<>();
         response.put("students", totalStudent);
         response.put("faculty", totalFaculty);
         response.put("subAdmin", totalSubAdmin);
         response.put("feesAdmin", totalFeesAdmin);
+        response.put("course",totalFeesCourseWise );
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Dashboard Data", response)
@@ -100,6 +107,7 @@ public class DomainAdminController {
                 .getName();
 
         String path = domainAdminService.updateProfilePic(domain, email, profilePic);
+        recordDomainAdminAction(domain, "UPDATE_DOMAIN_ADMIN_PROFILE_PICTURE", "DOMAIN_ADMIN", email);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Profile updated successfully", path)
@@ -121,6 +129,7 @@ public class DomainAdminController {
                 .getName();
 
         String path = universityService.updateLogo(domain, email, profilePic);
+        recordDomainAdminAction(domain, "UPDATE_UNIVERSITY_LOGO", "UNIVERSITY", domain);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Profile updated successfully", path)
@@ -137,6 +146,9 @@ public class DomainAdminController {
         try {
             String email = authentication.getName();
             boolean save = domainAdminService.updatePasswordByEmail(domain, email, newPassword);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_DOMAIN_ADMIN_PASSWORD", "DOMAIN_ADMIN", email);
+            }
             return new ResponseEntity<>(save + " Password change successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -150,12 +162,133 @@ public class DomainAdminController {
         try {
 
             boolean save = domainAdminService.updateDomainAdminByEmail(domain, domainAdmin);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_DOMAIN_ADMIN_PROFILE", "DOMAIN_ADMIN", "Profile updated");
+            }
             return new ResponseEntity<>(save + " Update successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+
+// ===== Fees Add Course Wise and Get =====
+
+    @PostMapping("/add-fees-course-wise")
+    public ResponseEntity<ApiResponse<?>> addFeesCourseWise(@PathVariable String domain, Authentication authentication , @RequestBody FeesCourseWiseDTO feesCourseWiseDTO ) {
+
+        String result = domainAdminService.addFeesCourseWise(domain, feesCourseWiseDTO);
+        recordDomainAdminAction(domain, "CREATE_COURSE_FEES", "COURSE_FEES", feesCourseWiseDTO.getCourse());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, result, null));
+    }
+
+
+
+        @GetMapping("/all-fees-course-wise")
+    public ResponseEntity<ApiResponse<?>> allFeesCourseWise(@PathVariable String domain, Authentication authentication ) {
+
+        List<FeesCourseWiseDTO> feesCourseWise  = domainAdminService.getAllFeesCourseWise( domain );
+
+        return ResponseEntity.ok()
+                .body( new ApiResponse<>( true,null ,feesCourseWise ));
+    }
+
+    // ============================================================
+// COURSE FEES - UPDATE
+// ============================================================
+
+    @PutMapping("/update-fees-course-wise")
+    public ResponseEntity<ApiResponse<?>> updateFeesCourseWise(
+            @PathVariable String domain,
+            @RequestBody FeesCourseWiseDTO dto
+    ) {
+        try {
+            String result = domainAdminService.updateFeesCourseWise( domain, dto);
+            recordDomainAdminAction(domain, "UPDATE_COURSE_FEES", "COURSE_FEES", dto.getCourse());
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(
+                            true,
+                            result,
+                            null
+                    )
+            );
+
+        } catch (Exception e) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            new ApiResponse<>(
+                                    false,
+                                    e.getMessage(),
+                                    null
+                            )
+                    );
+        }
+    }
+
+
+// ============================================================
+// COURSE FEES - DELETE
+// ============================================================
+
+    @DeleteMapping("/delete-fees-course-wise")
+    public ResponseEntity<ApiResponse<?>> deleteFeesCourseWise(
+            @PathVariable String domain,
+            @RequestParam String course
+    ) {
+
+        try {
+
+            String result =
+                    domainAdminService.deleteFeesCourseWise(
+                            domain,
+                            course
+                    );
+            recordDomainAdminAction(domain, "DELETE_COURSE_FEES", "COURSE_FEES", course);
+
+            return ResponseEntity.ok(
+                    new ApiResponse<>(
+                            true,
+                            result,
+                            null
+                    )
+            );
+
+        } catch (Exception e) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            new ApiResponse<>(
+                                    false,
+                                    e.getMessage(),
+                                    null
+                            )
+                    );
+        }
+    }
+
+
+    @PostMapping("/fees/course/excel")
+    public ResponseEntity<BulkUploadResultDTO>
+    uploadFeesCourseWiseFromExcel(
+            @PathVariable String domain,
+            @RequestParam("files") MultipartFile[] files
+    ) {
+
+        BulkUploadResultDTO result = domainAdminService.uploadFeesCourseWiseFromExcel(domain, files);
+        recordDomainAdminAction(domain, "BULK_UPLOAD_COURSE_FEES", "COURSE_FEES",
+                "Saved " + result.getSavedRows() + " rows");
+        return ResponseEntity.ok(result);
+    }
+
+
+
+
+
 
 // ===== STUDENT CRUD =====
 
@@ -164,6 +297,7 @@ public class DomainAdminController {
     public ResponseEntity<?> addStudent(@PathVariable String domain, @RequestBody StudentSignupDTO s) {
         try {
             String save = studentService.addStudent(domain, s);
+            recordDomainAdminAction(domain, "CREATE_STUDENT", "STUDENT", s.getEmail());
             return new ResponseEntity<>(save, HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -172,15 +306,24 @@ public class DomainAdminController {
     }
 
     // ------ READ ALL student for specific university ------
-    @GetMapping("/all_student")
-    public List<StudentResponseDTO> getAllStudents(@PathVariable String domain) {
-        return studentService.getAllStudent(domain);
-    }
+//    @GetMapping("/all_student")
+//    public List<StudentResponseDTO> getAllStudents(@PathVariable String domain  ,Authentication authentication) {
+//
+//        Set<String> roles = authentication.getAuthorities().stream()
+//                .map(authority -> authority.getAuthority())
+//                .collect(Collectors.toSet());
+//        return studentService.getAllStudent(domain, roles);
+//    }
+
 
     // ------ UPDATE Student Profile by Email ------
     @PutMapping("/update_student_profile")
     public Boolean updateStudentByEmail(@PathVariable String domain, @RequestBody Student s) {
-        return studentService.updateStudentByEmail(domain, s);
+        Boolean updated = studentService.updateStudentByEmail(domain, s);
+        if (Boolean.TRUE.equals(updated)) {
+            recordDomainAdminAction(domain, "UPDATE_STUDENT", "STUDENT", s.getEmail());
+        }
+        return updated;
     }
 
     // Update Password or Forget Password
@@ -191,6 +334,9 @@ public class DomainAdminController {
         try {
 
             boolean save = studentService.updatePasswordByEmail(domain, email, newpass);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_STUDENT_PASSWORD", "STUDENT", email);
+            }
             return new ResponseEntity<>(save + " Password change successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -202,7 +348,11 @@ public class DomainAdminController {
     // DELETE By email
     @DeleteMapping("/delete_student")
     public String deleteByEmail(@PathVariable String domain, @RequestParam String email) {
-        return studentService.deleteStudentByEmail(domain, email);
+        String result = studentService.deleteStudentByEmail(domain, email);
+        if (result.startsWith("Deleted")) {
+            recordDomainAdminAction(domain, "DELETE_STUDENT", "STUDENT", email);
+        }
+        return result;
     }
 
 
@@ -213,6 +363,7 @@ public class DomainAdminController {
     public ResponseEntity<?> addFaculty(@PathVariable String domain, @RequestBody FacultySignupDTO f) {
         try {
             String save = facultyService.addFaculty(domain, f);
+            recordDomainAdminAction(domain, "CREATE_FACULTY", "FACULTY", f.getEmail());
             return new ResponseEntity<>(save, HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -231,6 +382,9 @@ public class DomainAdminController {
     public ResponseEntity<?> updateFacultyPassword(@PathVariable String domain, @RequestParam String newpass, @RequestParam String email) {
         try {
             boolean save = facultyService.updatePasswordByEmail(domain, email, newpass);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_FACULTY_PASSWORD", "FACULTY", email);
+            }
             return new ResponseEntity<>(save + " Password change successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -242,13 +396,21 @@ public class DomainAdminController {
     // ------ UPDATE Faculty Profile by Email ------
     @PutMapping("/update_faculty_profile")
     public Boolean updateFacultyByFacultyId(@PathVariable String domain, @RequestBody Faculty faculty) {
-        return facultyService.updateFacultyByFacultyEmail(domain, faculty);
+        Boolean updated = facultyService.updateFacultyByFacultyEmail(domain, faculty);
+        if (Boolean.TRUE.equals(updated)) {
+            recordDomainAdminAction(domain, "UPDATE_FACULTY", "FACULTY", faculty.getEmail());
+        }
+        return updated;
     }
 
     // ------ DELETE by faculty Email ------
     @DeleteMapping("/delete_faculty")
     public String deleteFacultyByEmail(@PathVariable String domain, @RequestParam String email) {
-        return facultyService.deleteFacultyByEmail(domain, email);
+        String result = facultyService.deleteFacultyByEmail(domain, email);
+        if (result.startsWith("Deleted")) {
+            recordDomainAdminAction(domain, "DELETE_FACULTY", "FACULTY", email);
+        }
+        return result;
     }
 
 
@@ -259,6 +421,7 @@ public class DomainAdminController {
     public ResponseEntity<?> addSubAdmin(@PathVariable String domain, @RequestBody SubAdminSignupDTO subAdmin) {
         try {
             String save = subAdminService.addSubAdmin(domain, subAdmin);
+            recordDomainAdminAction(domain, "CREATE_SUB_ADMIN", "SUB_ADMIN", subAdmin.getEmail());
             return new ResponseEntity<>(save, HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -276,7 +439,11 @@ public class DomainAdminController {
     // ------ UPDATE SubAdmin Profile by Email  ------
     @PutMapping("/update_subAdmin")
     public Boolean updateSubAdminByEmail(@PathVariable String domain, @RequestBody SubAdmin s) {
-        return subAdminService.updateSubAdminByEmail(domain, s);
+        Boolean updated = subAdminService.updateSubAdminByEmail(domain, s);
+        if (Boolean.TRUE.equals(updated)) {
+            recordDomainAdminAction(domain, "UPDATE_SUB_ADMIN", "SUB_ADMIN", s.getEmail());
+        }
+        return updated;
     }
 
 
@@ -286,6 +453,9 @@ public class DomainAdminController {
         try {
 
             boolean save = subAdminService.updatePasswordByEmail(domain, email, newpass);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_SUB_ADMIN_PASSWORD", "SUB_ADMIN", email);
+            }
             return new ResponseEntity<>(save + " Password change successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -296,7 +466,11 @@ public class DomainAdminController {
     // ------ DELETE SubAdmin Profile by Email  ------
     @DeleteMapping("/delete_subAdmin")
     public String deleteSubAdminByEmail(@PathVariable String domain, @RequestParam String email) {
-        return subAdminService.deleteSubAdminByEmail(domain, email);
+        String result = subAdminService.deleteSubAdminByEmail(domain, email);
+        if (result.startsWith("Deleted")) {
+            recordDomainAdminAction(domain, "DELETE_SUB_ADMIN", "SUB_ADMIN", email);
+        }
+        return result;
     }
 
 
@@ -307,6 +481,7 @@ public class DomainAdminController {
     public ResponseEntity<?> addFeesAdmin(@PathVariable String domain, @RequestBody FeesAdminSignupDTO feesAdmin) {
         try {
             String save = feesAdminService.addFeesAdmin(domain, feesAdmin);
+            recordDomainAdminAction(domain, "CREATE_FEES_ADMIN", "FEES_ADMIN", feesAdmin.getEmail());
             return new ResponseEntity<>(save, HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -323,8 +498,12 @@ public class DomainAdminController {
 
     // ------ UPDATE feesAdmin Profile by Email  ------
     @PutMapping("/update_feesAdmin")
-    public FeesAdmin updateFeesAdminByEmail(@PathVariable String domain, @RequestBody FeesAdmin feesAdmin) {
-        return feesAdminService.updateFeesAdminByEmail(domain, feesAdmin);
+    public FeesAdminResponseDTO updateFeesAdminByEmail(@PathVariable String domain, @RequestBody FeesAdmin feesAdmin) {
+        FeesAdminResponseDTO updated = feesAdminService.updateFeesAdminByEmail(domain, feesAdmin);
+        if (updated != null) {
+            recordDomainAdminAction(domain, "UPDATE_FEES_ADMIN", "FEES_ADMIN", updated.getEmail());
+        }
+        return updated;
     }
 
     // Update Password or Forget Password
@@ -333,6 +512,9 @@ public class DomainAdminController {
         try {
 
             boolean save = feesAdminService.updatePasswordByEmail(domain, email, newpass);
+            if (save) {
+                recordDomainAdminAction(domain, "UPDATE_FEES_ADMIN_PASSWORD", "FEES_ADMIN", email);
+            }
             return new ResponseEntity<>(save + " Password change successfully \n", HttpStatus.CREATED);
 
         } catch (Exception e) {
@@ -343,7 +525,11 @@ public class DomainAdminController {
     // ------ DELETE feesAdmin Profile by Email  ------
     @DeleteMapping("/delete_feesAdmin")
     public String deleteFeesAdminByEmail(@PathVariable String domain, @RequestParam String email) {
-        return feesAdminService.deleteFeesAdminByEmail(domain, email);
+        String result = feesAdminService.deleteFeesAdminByEmail(domain, email);
+        if (result.startsWith("Deleted")) {
+            recordDomainAdminAction(domain, "DELETE_FEES_ADMIN", "FEES_ADMIN", email);
+        }
+        return result;
     }
 
 
@@ -369,6 +555,7 @@ public class DomainAdminController {
 
         try {
             BulkUploadResultDTO resultDTO =  domainAdminService.uploadStudentsFromExcel(domain, files);
+            recordBulkUpload(domain, "BULK_UPLOAD_STUDENTS", "STUDENT", resultDTO);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
@@ -394,6 +581,7 @@ public class DomainAdminController {
 
         try {
             BulkUploadResultDTO resultDTO = domainAdminService.uploadFacultyFromExcel(domain, files);
+            recordBulkUpload(domain, "BULK_UPLOAD_FACULTY", "FACULTY", resultDTO);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
@@ -419,6 +607,7 @@ public class DomainAdminController {
 
         try {
             BulkUploadResultDTO resultDTO = domainAdminService.uploadSubAdminFromExcel(domain, files);
+            recordBulkUpload(domain, "BULK_UPLOAD_SUB_ADMINS", "SUB_ADMIN", resultDTO);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
@@ -444,6 +633,7 @@ public class DomainAdminController {
 
         try {
             BulkUploadResultDTO resultDTO = domainAdminService.uploadFeesAdminFromExcel(domain, files);
+            recordBulkUpload(domain, "BULK_UPLOAD_FEES_ADMINS", "FEES_ADMIN", resultDTO);
 
             return ResponseEntity.ok(
                     new ApiResponse<>(
@@ -456,6 +646,35 @@ public class DomainAdminController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    private void recordBulkUpload(
+            String domain,
+            String action,
+            String targetType,
+            BulkUploadResultDTO result
+    ) {
+        recordDomainAdminAction(
+                domain,
+                action,
+                targetType,
+                "Saved " + result.getSavedRows() + " of " + result.getTotalRows()
+                        + " rows; " + result.getDuplicateRows() + " duplicates and "
+                        + result.getInvalidRows() + " invalid"
+        );
+    }
+
+    private void recordDomainAdminAction(String domain, String action, String targetType, String details) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        erpActionAuditService.log(
+                domain,
+                authentication.getName(),
+                "DOMAIN_ADMIN",
+                action,
+                targetType,
+                null,
+                details
+        );
     }
 
 }

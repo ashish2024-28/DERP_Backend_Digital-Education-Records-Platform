@@ -20,6 +20,8 @@ public class SubAdminResponseDTO {
 
     private String profilePic;
 
+    private String role;
+
     private LocalDateTime createdDateTime;
 
     private LocalDateTime lastUpdateDateTime;
@@ -30,9 +32,6 @@ public class SubAdminResponseDTO {
 
     private String course;
 
-    private String teachingAssignments;
-
     private String universityName;
-
 
 }

@@ -1,4 +1,6 @@
 # -------- STAGE 1 : Build --------
+#builder stage = Java application ko build karne ki jagah
+
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 #Inside the container, it creates a folder /app and moves into it.
@@ -32,3 +34,6 @@ COPY --from=builder /app/target/crud_operation-0.0.1-SNAPSHOT.jar .
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "crud_operation-0.0.1-SNAPSHOT.jar"]
+
+
+

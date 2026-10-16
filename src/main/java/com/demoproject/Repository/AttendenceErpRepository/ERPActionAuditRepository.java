@@ -9,9 +9,13 @@ import java.util.List;
 public interface ERPActionAuditRepository
         extends JpaRepository<ERPActionAudit, Long> {
 
-    List<ERPActionAudit>
-    findByDomainOrderByCreatedAtDesc(
+    List<ERPActionAudit> findByDomainIgnoreCaseOrderByCreatedAtDesc(
             String domain
+    );
+
+    List<ERPActionAudit> findByDomainIgnoreCaseAndRoleIgnoreCaseOrderByCreatedAtDesc(
+            String domain,
+            String role
     );
 }
 

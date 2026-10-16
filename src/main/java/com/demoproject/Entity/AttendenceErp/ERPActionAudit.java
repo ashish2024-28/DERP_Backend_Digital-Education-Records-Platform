@@ -10,19 +10,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "erp_action_audit",
-        indexes = {
-                @Index(
-                        name = "idx_audit_domain",
-                        columnList = "domain"
-                ),
-                @Index(
-                        name = "idx_audit_created",
-                        columnList = "created_at"
-                )
-        }
-)
+@Table
 @Getter
 @Setter
 @NoArgsConstructor

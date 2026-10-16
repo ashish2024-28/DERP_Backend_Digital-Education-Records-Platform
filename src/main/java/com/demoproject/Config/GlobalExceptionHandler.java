@@ -13,7 +13,7 @@ import com.demoproject.DTO.ApiResponse;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(SignatureException.class)
-    public ResponseEntity<?> handleSignatureException(SignatureException ex) {
+    public ResponseEntity<String> handleSignatureException(SignatureException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body("Invalid or expired token. Please login again.");

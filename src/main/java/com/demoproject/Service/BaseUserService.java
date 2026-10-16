@@ -73,23 +73,27 @@ public class BaseUserService {
     
     // public String userLogin(LoginRequestDTO loginRequestDTO){
     public LoginResponseDTO userLogin(LoginRequestDTO request){
-        
+
+        String domain = request.getDomain().toLowerCase().trim();
+        String email = request.getEmail().toLowerCase().trim();
+
         // 1️⃣ Domain validation (manual)
-        BaseUser user = findUserByDomainAndEmail(request.getDomain(), request.getEmail());
+        BaseUser user = findUserByDomainAndEmail(domain,email);
         // LoginResponseDTO user = findUserByDomainAndEmail(request.getDomain(), request.getEmail());
 
         if (user == null) {
             throw new RuntimeException("Invalid domain or email");
         }
+
         // 2️⃣ Password validation (Spring Security)
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken( email, request.getPassword()));
         if(authentication.isAuthenticated()){
             // return jwtService.generateToken(user.getEmail());
             // authentication.getName() => return user email
 
             // return jwtService.generateToken(authentication.getName());
             String token =  jwtService.generateToken(authentication.getName());
-            
+
             // set user last login time date
 
             return new LoginResponseDTO(token, user.getRole().toString());

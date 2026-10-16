@@ -20,6 +20,8 @@ public class FacultyResponseDTO {
 
     private String profilePic;
 
+    private String role;
+
     private LocalDateTime createdDateTime;
 
     private LocalDateTime lastUpdateDateTime; // For login purposes
@@ -30,9 +32,6 @@ public class FacultyResponseDTO {
 
     private String course;
 
-    private String teachingAssignments;
-
     private String universityName;
-
 
 }

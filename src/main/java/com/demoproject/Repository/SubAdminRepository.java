@@ -19,6 +19,7 @@ public interface SubAdminRepository extends JpaRepository<SubAdmin, Long> {
     List<SubAdmin> findByDomain(String domain);
 
     Optional<SubAdmin> findByEmailAndDomain(String email, String domain);
+    Optional<SubAdmin> findByEmailIgnoreCaseAndDomainIgnoreCase(String email, String domain);
     SubAdmin findByDomainAndEmail(String domain, String email );
 
     SubAdmin findByEmailAndPassword(String email, String password);
@@ -39,4 +40,3 @@ public interface SubAdminRepository extends JpaRepository<SubAdmin, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 }
-

@@ -1,281 +1,101 @@
-# DERP — Digital Education Records Platform
+# DERP Backend
 
-DERP (Digital Education Records Platform) is a centralized educational management platform designed to organize academic records, attendance, certificates, achievements, internships, workshops, results, and other student-related information in one digital ecosystem.
+This repository contains the Spring Boot REST API for **DERP (Digital Education Records Platform)**. It supports university-scoped accounts, role-based access, student and faculty records, attendance, certifications, notes, and fee-related operations.
 
-## Why DERP?
+The React application is in the [DERP frontend repository](https://github.com/ashish2024-28/DERP_Frontend-Digital-Education-Records-Platform-).
 
-The idea came from real problems experienced in college.
+## What the API does
 
-During a hackathon, the first version of the idea was implemented using HTML, CSS, and JavaScript. While working on it, several practical problems became clear.
+- Lists and registers universities with a domain administrator.
+- Authenticates users and issues JWTs.
+- Manages student, faculty, sub-admin, fees-admin, and domain-admin profiles.
+- Provides domain-admin operations for user and fee-course management.
+- Lets faculty mark attendance; students and authorized staff can read attendance views.
+- Provides student certification upload/list/search/download/delete and user-notepad endpoints.
+- Provides fee-course, fee-account, and payment-method/payment-status APIs.
 
-Students often have:
+Student and fees-admin fee workflows are exposed in the frontend. Payment submissions remain pending until fees staff verifies the recorded transfer; cash receipts are recorded as verified immediately.
 
-* Multiple certificates
-* Workshop certificates
-* Internship certificates
-* Academic results
-* Achievements
-* Participation records
-* Different documents stored in different places
-
-When preparing a resume, students may remember that they have achievements but cannot easily find or organize them.
-
-At the same time, college ERP systems can create problems such as:
-
-* Slow attendance submission
-* ERP crashes
-* Delayed responses
-* Repeated attendance entry
-* Failed submissions
-* Difficulty managing academic records
-* Additional administrative workload
-
-These problems led to the idea of building a larger platform rather than a small static project.
-
-## Vision
-
-The long-term vision of DERP is:
-
-> Build a centralized digital education-record ecosystem where students, faculty, administrators, and educational institutions can manage academic information efficiently.
-
-## Core Areas
-
-DERP can eventually support:
+## Backend architecture
 
 ```text
-Student
-│
-├── Profile ──> (img,name,rollNo,section,course,branch,batch,email,mobNo,fatherName,fatheMob,etc)
-│
-├── Attendance/ERP
-├── 
-├── Semester Results
-├── Certificates
-├── Workshops
-├── Internships
-├── Achievements
-├── Academic Records
-├── Fees
-├──Resume / Portfolio Data
-└──etc 
+HTTP request
+    │
+Spring Security / JWT / role and domain checks
+    │
+Controller → Service → Spring Data repository → relational database
 ```
 
-Faculty can manage:
+- **Controllers** map HTTP methods and paths and validate access.
+- **Services** implement account, attendance, university, fee, and profile workflows.
+- **Repositories and JPA entities** read and persist relational data.
+- **DTOs** define request and response shapes for the API.
 
-```text
-Faculty
-│
-├── Assigned Subjects
-├── Students
-├── Attendance
-├── Academic Records
-└── Subject-related activities
+User roles include `ADMIN`, `DOMAIN_ADMIN`, `SUB_ADMIN`, `FEES_ADMIN`, `FACULTY`, and `STUDENT`. Many university endpoints also check that the requested domain matches the authenticated user.
+
+## Technology
+
+- Java and Spring Boot
+- Spring Web MVC, Spring Security, and JWT (JJWT)
+- Spring Data JPA / Hibernate
+- PostgreSQL JDBC driver is currently declared in Maven
+- OpenAPI/Swagger, ModelMapper, Redis/cache dependencies, Apache POI for Excel
+- Maven Wrapper
+
+## Requirements and configuration
+
+- A JDK compatible with the Maven compiler configuration
+- A configured relational database
+- Environment configuration for the database, JWT signing secret, frontend CORS origin, server context path, Swagger UI path, and the platform OTP-provider URL (`DERP_OTP_API_BASE_URL`, which must match the frontend OTP service base URL)
+
+The repository's configuration currently needs alignment before a clean local setup:
+
+- `pom.xml` declares Java 21 but configures compiler source/target 25.
+- The PostgreSQL driver is declared while production properties specify a MySQL dialect; select one database and align driver, JDBC URL, and Hibernate dialect.
+- Configure secrets locally and never commit populated `.env` files or production credentials. The example file contains credential-like values; do not reuse them.
+
+## Run locally
+
+From this repository, after resolving the JDK/database configuration and setting the required environment variables:
+
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
-Administrators can manage:
+To package the application:
 
-```text
-Administration
-│
-├── Students
-├── Faculty
-├── Departments
-├── Courses
-├── Subjects
-├── Attendance
-├── Results
-├── Certificates
-├── Fees
-└── Institution Configuration
+```powershell
+.\mvnw.cmd clean package
 ```
 
-## Technology Stack
+The server uses the configured port (with 8080 as the default) and may use a servlet context path. Swagger/OpenAPI routes are configurable; check `SWAGGER_URL` and the running application.
 
-### Frontend
+## Main API groups
 
-* React.js
-* HTML5
-* CSS3
-* Tailwind CSS
-* JavaScript
+| API group | Example paths | Purpose |
+|---|---|---|
+| Public onboarding | `/home_page/**` | List, validate, and register a university |
+| Login and signup | `/{domain}/login_profile/**`, `/{domain}/signup/**` | Authenticate and create supported account roles |
+| Role accounts | `/{domain}/student/**`, `/{domain}/faculty/**`, `/{domain}/subAdmin/**`, `/{domain}/feesAdmin/**`, `/{domain}/domainAdmin/**` | Profile and role-specific operations |
+| Attendance | `/{domain}/erp/attendance/**` | Mark attendance, read summaries, manage retention |
+| Fees | `/{domain}/domainAdmin/*fees-course-wise`, `/{domain}/fees-admin/**`, `/{domain}/fees-student/**` | Configure course fees, process payment records, read fee accounts |
+| Student certifications | `/{domain}/student/certifications/**` | Manage certificates with owner/domain-scoped reads, downloads, and deletes |
+| Notepad | `/{domain}/{role}/notepad/**` | Manage a user's notes |
+| Global administration | `/admin/**` | Manage universities and domain administrators |
 
-### Backend
+Paths preserve legacy case and spelling (for example `subAdmin`, `feesAdmin`, and `verify-faill`). Refer to controller annotations or the running OpenAPI documentation for exact methods, DTOs, and current access requirements.
 
-* Java
-* Spring Boot
-* Spring Security
-* JWT
+## Important implementation notes
 
-[//]: # (* OAuth2)
-* REST APIs
-* JDBC / JPA
-
-### Database
-
-* MySQL
-* Postgree
-
-### Development Tools
-
-* Git
-* GitHub
-* Maven
-* Docker
-* Postman
-* Swagger / OpenAPI
-* diagrams.net
-* Figma
-
-## Architecture
-
-Initial architecture:
-
-```text
-React Frontend
-       │
-       ▼
-Spring Boot REST API
-       │
-       ▼
-Service Layer
-       │
-       ▼
-Repository / Data Access Layer
-       │
-       ▼
-MySQL/Postgree
-```
-
-Future architecture may evolve toward:
-
-```text
-                 ┌───────────────┐
-                 │    Frontend   │
-                 │    React      │
-                 └───────┬───────┘
-                         │
-                         ▼
-                 ┌───────────────┐
-                 │ API Gateway   │
-                 └───────┬───────┘
-                         │
-              ┌──────────┼──────────┐
-              ▼          ▼          ▼
-          User Service  Academic   Attendance
-                       Service      Service
-              │          │          │
-              └──────────┼──────────┘
-                         ▼
-                    Data Layer
-                         │
-                         ▼
-                       MySQL
-```
-
-## Main Objectives
-
-1. Centralize student educational records.
-2. Reduce manual administrative work.
-3. Improve attendance management.
-4. Organize certificates and achievements.
-5. Make academic information easier to access.
-6. Reduce duplicate data entry.
-7. Provide role-based access.
-8. Create a scalable architecture.
-9. Maintain secure student information.
-10. Build a production-oriented software engineering project.
-
-## Current Roles
-
-* Student
-* Faculty
-* Admin
-* Domain Admin
-* Sub Admin
-* Fees Admin
-
-## Engineering Documentation
-
-The complete engineering process is documented under `/docs`.
-
-| Document | Purpose                |
-| -------- | ---------------------- |
-| 01       | Problem                |
-| 02       | Requirements           |
-| 03       | MVP                    |
-| 04       | User Flow              |
-| 05       | UI/UX                  |
-| 06       | HLD                    |
-| 07       | Database               |
-| 08       | API                    |
-| 09       | LLD                    |
-| 10       | Testing                |
-| 11       | Deployment             |
-| 12       | Monitoring             |
-| 13       | Architecture Decisions |
-
-## Project Philosophy
-
-DERP is not intended to be only a CRUD application.
-
-The project follows a software-engineering lifecycle:
-
-```text
-Problem
-   ↓
-Requirements
-   ↓
-MVP
-   ↓
-User Flow
-   ↓
-UI/UX
-   ↓
-HLD
-   ↓
-Database
-   ↓
-API
-   ↓
-LLD
-   ↓
-Implementation
-   ↓
-Testing
-   ↓
-Deployment
-   ↓
-Monitoring
-   ↓
-Iteration
-```
-
-## Status
-
-DERP is an evolving project.
-
-The initial prototype was created during a hackathon using HTML, CSS, and JavaScript. The project is now being developed toward a more scalable full-stack architecture using React, Spring Boot, and MySQL.
-
-## Future Scope
-
-Potential future modules include:
-
-* Digital certificates
-* QR-based certificate verification
-* Resume generation
-* Internship management
-* Workshop management
-* Fee management
-* Notifications
-* Parent access
-* Analytics
-* Institution-level dashboards
-* Multi-university support
-* Audit logs
-* Document storage
-* Advanced reporting
-* Mobile application
+- JWT authentication is stateless; passwords are intended to use BCrypt.
+- Domain and role authorization must be enforced by the backend; frontend navigation is not a security control.
+- Platform-admin university deletion requires a backend-verified OTP, a typed domain confirmation, a reason, and creates a deletion audit entry. Configure `DERP_OTP_API_BASE_URL` to the same trusted OTP service used by `VITE_API_OTP_URL`; deletion remains unavailable when the backend provider is not configured.
+- Certificate files are written outside public static uploads and downloaded through an authenticated student/domain-scoped endpoint; legacy certificate paths are also blocked from public static access.
+- New student fee submissions have no verifying fees-admin until they are reviewed. On databases created before this workflow, apply the matching [`PostgreSQL`](./src/main/resources/db/manual/allow-pending-fee-payments-postgresql.sql) or [`MySQL`](./src/main/resources/db/manual/allow-pending-fee-payments-mysql.sql) script once before using student payment submission; Hibernate schema update does not reliably relax an existing `NOT NULL` constraint.
+- Attendance has role-specific views, audit logging, semester-aware retention data, and scheduled cleanup behavior.
+- Some profile/account operations still use legacy DTOs as their `data` payload.
+- Automated tests and a complete production deployment guide were not established during the documentation pass; validate locally and add tests before relying on production behavior.
 
 ## License
 
-To be decided.
+No license has been specified yet. Please contact the project owner before redistribution.

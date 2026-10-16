@@ -17,13 +17,10 @@ import java.util.Map;
 public record AttendanceMarkRequest(
 
         @NotBlank
-        String teachingBatch,
+        String studyBatch,
 
         @NotBlank
         String subject,
-
-        @NotNull
-        LocalDate attendanceDate,
 
         @NotNull
         Integer periodNumber,

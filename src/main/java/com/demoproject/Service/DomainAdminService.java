@@ -3,6 +3,7 @@ package com.demoproject.Service;
 import com.demoproject.DTO.BulkUpload.BulkUploadResultDTO;
 import com.demoproject.DTO.DomainAdminDTO.DomainAdminResponseDTO;
 import com.demoproject.DTO.FacultyDTO.FacultySignupDTO;
+import com.demoproject.DTO.FeesAccount.DomainAdmin.FeesCourseWiseDTO;
 import com.demoproject.DTO.FeesAdminDto.FeesAdminSignupDTO;
 import com.demoproject.DTO.StudentDTO.StudentSignupDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
@@ -10,12 +11,14 @@ import com.demoproject.DTO.University.UniversityAndDomainAdminResponseDTO;
 import com.demoproject.DTO.University.UniversityResponseDTO;
 import com.demoproject.Entity.*;
 
+import com.demoproject.Entity.FeesAccounts.FeesCourseWise;
 import com.demoproject.Repository.*;
+import com.demoproject.Repository.FeesAcountsRepository.FeesCourseWiseRepository;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.jspecify.annotations.NonNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +41,9 @@ import java.util.stream.Collectors;
 public class DomainAdminService {
 
 
+    @Autowired
+    private  FeesCourseWiseRepository feesCourseWiseRepository;
+
     // method 1
     @Autowired
     private StudentService studentService;
@@ -59,6 +65,7 @@ public class DomainAdminService {
     private DomainAdminRepository dAdminRepo;
     @Autowired
     private UniversityService universityService;
+
     @Autowired
     @Qualifier("bcryptEncoder")
     PasswordEncoder passwordEncoder;
@@ -90,7 +97,7 @@ public class DomainAdminService {
         }
 
         // 2. Find University using domain
-        University university = universityService.getByDomain(domain);
+        University university = universityService.getUniversityByDomain(domain);
 
         if (university == null) {
             throw new RuntimeException("University not found for domain: " + domain);
@@ -192,11 +199,465 @@ public class DomainAdminService {
 
 
 
+    // ============================================================
+    // Add Fees Of All Course
+    // ============================================================
+
+    //later create  excel
+
+    public String addFeesCourseWise(
+            String domain,
+            FeesCourseWiseDTO feesCourseWiseDTO
+    ) {
+
+        University university =
+                universityService.getUniversityByDomain(domain);
+
+        if (university == null) {
+            throw new IllegalArgumentException(
+                    "University not found for domain: " + domain
+            );
+        }
+
+        String course =
+                feesCourseWiseDTO.getCourse()
+                        .trim()
+                        .toUpperCase(Locale.ROOT);
+
+        if (course.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Course is required"
+            );
+        }
+
+        if (feesCourseWiseDTO.getFees() == null ||
+                feesCourseWiseDTO.getFees() < 0) {
+
+            throw new IllegalArgumentException(
+                    "Fees must be a valid positive number"
+            );
+        }
+
+        boolean exists =
+                feesCourseWiseRepository
+                        .findByUniversity(university)
+                        .stream()
+                        .anyMatch(existing ->
+                                existing.getCourse()
+                                        .equalsIgnoreCase(course)
+                        );
+
+        if (exists) {
+            throw new IllegalArgumentException(
+                    "Course already exists for this university: "
+                            + course
+            );
+        }
+
+        FeesCourseWise feesCourseWise =
+                new FeesCourseWise();
+
+        feesCourseWise.setCourse(course);
+        feesCourseWise.setFees(
+                feesCourseWiseDTO.getFees()
+        );
+        feesCourseWise.setUniversity(university);
+
+        feesCourseWiseRepository.save(
+                feesCourseWise
+        );
+
+        return "Fees Added Successfully Course : "
+                + course
+                + " Fees : "
+                + feesCourseWise.getFees();
+    }
+
+    public List<FeesCourseWiseDTO> getAllFeesCourseWise(String domain ){
+
+        University university = universityService.getUniversityByDomain(domain);
+
+        if (university == null) {
+            throw new IllegalArgumentException(
+                    "University not found for domain: " + domain
+            );
+        }
+
+        return feesCourseWiseRepository.findByUniversity(university).stream().map(
+                feesCourseWise ->
+                        modelMapper.map(feesCourseWise , FeesCourseWiseDTO.class)
+        ).toList();
+    }
+
+    // ============================================================
+// COURSE FEES EXCEL UPLOAD
+// ============================================================
+
+    public BulkUploadResultDTO uploadFeesCourseWiseFromExcel(
+            String domain,
+            MultipartFile[] files
+    ) {
+
+        validateFiles(files);
+
+        University university =
+                universityService.getUniversityByDomain(domain);
+
+        if (university == null) {
+            throw new IllegalArgumentException(
+                    "University not found for domain: " + domain
+            );
+        }
+
+        BulkUploadResultDTO result =
+                new BulkUploadResultDTO();
+
+        Set<String> uploadedCourses =
+                new HashSet<>();
+
+        for (MultipartFile file : files) {
+
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+
+            validateExcelFile(file);
+
+            try (
+                    InputStream inputStream =
+                            file.getInputStream();
+
+                    Workbook workbook =
+                            WorkbookFactory.create(inputStream)
+            ) {
+
+                Sheet sheet =
+                        workbook.getSheetAt(0);
+
+                DataFormatter formatter =
+                        new DataFormatter();
+
+                // ------------------------------------------------
+                // HEADER
+                // ------------------------------------------------
+
+                Map<String, Integer> columns = validateHeader(
+                        sheet.getRow(0),
+                        new String[]{
+                                "course",
+                                "fees"
+                        },
+                        file.getOriginalFilename(),
+                        formatter
+                );
+
+                // ------------------------------------------------
+                // ROWS
+                // ------------------------------------------------
+
+                for (
+                        int i = 1;
+                        i <= sheet.getLastRowNum();
+                        i++
+                ) {
+
+                    Row row = sheet.getRow(i);
+
+                    if (isEmptyRow(row, formatter)) {
+                        continue;
+                    }
+
+                    int rowNumber = i + 1;
+
+                    result.setTotalRows(
+                            result.getTotalRows() + 1
+                    );
+
+                    try {
+
+                        String course =
+                                getCell(row, "course", columns, formatter)
+                                        .trim()
+                                        .toUpperCase(Locale.ROOT);
+
+                        String feesText =
+                                getCell(row, "fees", columns, formatter)
+                                        .trim();
+
+                        // ----------------------------------------
+                        // VALIDATION
+                        // ----------------------------------------
+
+                        if (course.isBlank()) {
+
+                            result.addInvalid(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Course is required"
+                            );
+
+                            continue;
+                        }
+
+                        if (feesText.isBlank()) {
+
+                            result.addInvalid(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Fees is required"
+                            );
+
+                            continue;
+                        }
+
+                        Double fees;
+
+                        try {
+
+                            fees = Double.parseDouble(feesText);
+
+                        } catch (NumberFormatException e) {
+
+                            result.addInvalid(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Fees must be a valid number"
+                            );
+
+                            continue;
+                        }
+
+                        if (fees < 0) {
+
+                            result.addInvalid(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Fees cannot be negative"
+                            );
+
+                            continue;
+                        }
+
+                        // ----------------------------------------
+                        // DUPLICATE IN SAME EXCEL UPLOAD
+                        // ----------------------------------------
+
+                        if (!uploadedCourses.add(course)) {
+
+                            result.addDuplicate(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Duplicate course in uploaded files"
+                            );
+
+                            continue;
+                        }
+
+                        // ----------------------------------------
+                        // DUPLICATE IN DATABASE
+                        // ----------------------------------------
+
+                        boolean courseExists =
+                                feesCourseWiseRepository
+                                        .findByUniversity(university)
+                                        .stream()
+                                        .anyMatch(existing ->
+                                                existing.getCourse()
+                                                        .equalsIgnoreCase(course)
+                                        );
+
+                        if (courseExists) {
+
+                            result.addDuplicate(
+                                    file.getOriginalFilename(),
+                                    rowNumber,
+                                    course,
+                                    "Course already exists for this university"
+                            );
+
+                            continue;
+                        }
+
+                        // ----------------------------------------
+                        // SAVE
+                        // ----------------------------------------
+
+                        FeesCourseWise feesCourseWise =
+                                new FeesCourseWise();
+
+                        feesCourseWise.setCourse(course);
+                        feesCourseWise.setFees(fees);
+                        feesCourseWise.setUniversity(university);
+
+                        feesCourseWiseRepository.save(
+                                feesCourseWise
+                        );
+
+                        result.setSavedRows(
+                                result.getSavedRows() + 1
+                        );
+
+                    } catch (Exception e) {
+
+                        result.addInvalid(
+                                file.getOriginalFilename(),
+                                rowNumber,
+                                getCell(row, 0, formatter),
+                                getErrorMessage(
+                                        e,
+                                        "Failed to save course fees"
+                                )
+                        );
+                    }
+                }
+
+            } catch (Exception e) {
+
+                throw new IllegalArgumentException(
+                        "Failed to process file "
+                                + file.getOriginalFilename()
+                                + ": "
+                                + getErrorMessage(
+                                e,
+                                "Invalid Excel file"
+                        ),
+                        e
+                );
+            }
+        }
+
+        return result;
+    }
 
 
+    // ============================================================
+// COURSE FEES - UPDATE
+// ============================================================
 
+    public String updateFeesCourseWise(
+            String domain,
+            FeesCourseWiseDTO dto
+    ) {
 
+        if (dto == null) {
+            throw new IllegalArgumentException(
+                    "Course fees data is required"
+            );
+        }
 
+        University university =
+                universityService.getUniversityByDomain(domain);
+
+        if (university == null) {
+            throw new IllegalArgumentException(
+                    "University not found for domain: " + domain
+            );
+        }
+
+        if (dto.getCourse() == null ||
+                dto.getCourse().trim().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Course is required"
+            );
+        }
+
+        if (dto.getFees() == null ||
+                dto.getFees() < 0) {
+
+            throw new IllegalArgumentException(
+                    "Fees must be zero or greater"
+            );
+        }
+
+        String course =
+                dto.getCourse()
+                        .trim()
+                        .toUpperCase(Locale.ROOT);
+
+        FeesCourseWise existing =
+                feesCourseWiseRepository
+                        .findByUniversity(university)
+                        .stream()
+                        .filter(item ->
+                                item.getCourse() != null &&
+                                        item.getCourse()
+                                                .equalsIgnoreCase(course)
+                        )
+                        .findFirst()
+                        .orElse(null);
+
+        if (existing == null) {
+            throw new IllegalArgumentException(
+                    "Course not found: " + course
+            );
+        }
+
+        existing.setFees(dto.getFees());
+
+        feesCourseWiseRepository.save(existing);
+
+        return "Course fees updated successfully: "
+                + course
+                + " - "
+                + existing.getFees();
+    }
+
+// ============================================================
+// COURSE FEES - DELETE
+// ============================================================
+
+    public String deleteFeesCourseWise(
+            String domain,
+            String course
+    ) {
+
+        University university =
+                universityService.getUniversityByDomain(domain);
+
+        if (university == null) {
+            throw new IllegalArgumentException(
+                    "University not found for domain: " + domain
+            );
+        }
+
+        if (course == null || course.trim().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Course is required"
+            );
+        }
+
+        String normalizedCourse =
+                course.trim().toUpperCase(Locale.ROOT);
+
+        FeesCourseWise existing =
+                feesCourseWiseRepository
+                        .findByUniversity(university)
+                        .stream()
+                        .filter(item ->
+                                item.getCourse() != null &&
+                                        item.getCourse()
+                                                .equalsIgnoreCase(normalizedCourse)
+                        )
+                        .findFirst()
+                        .orElse(null);
+
+        if (existing == null) {
+            throw new IllegalArgumentException(
+                    "Course not found: " + normalizedCourse
+            );
+        }
+
+        feesCourseWiseRepository.delete(existing);
+
+        return "Course deleted successfully: "
+                + normalizedCourse;
+    }
 
 
 
@@ -225,13 +686,13 @@ public class DomainAdminService {
 
             try (
                     InputStream inputStream = file.getInputStream();
-                    Workbook workbook = new XSSFWorkbook(inputStream)
+                    Workbook workbook = WorkbookFactory.create(inputStream)
             ) {
 
                 Sheet sheet = workbook.getSheetAt(0);
                 DataFormatter formatter = new DataFormatter();
 
-                validateHeader(
+                Map<String, Integer> columns = validateHeader(
                         sheet.getRow(0),
                         new String[]{
                                 "rollNumber",
@@ -239,8 +700,8 @@ public class DomainAdminService {
                                 "email",
                                 "mobileNumber",
                                 "course",
-                                "branch",
                                 "batch",
+                                "academicSession",
                                 "studyBatch",
                                 "studySubjects",
                                 "fatherName",
@@ -270,54 +731,55 @@ public class DomainAdminService {
                         StudentSignupDTO student = new StudentSignupDTO();
 
                         student.setRollNumber(
-                                getCell(row, 0, formatter)
+                                getCell(row, "rollNumber", columns, formatter)
                         );
 
                         student.setName(
-                                getCell(row, 1, formatter)
+                                getCell(row, "name", columns, formatter)
                         );
 
                         student.setEmail(
                                 normalizeEmail(
-                                        getCell(row, 2, formatter)
+                                        getCell(row, "email", columns, formatter)
                                 )
                         );
 
                         student.setMobileNumber(
-                                getCell(row, 3, formatter)
+                                getCell(row, "mobileNumber", columns, formatter)
                         );
 
                         student.setCourse(
-                                getCell(row, 4, formatter)
+                                getCell(row, "course", columns, formatter)
                         );
 
-                        student.setBranch(
-                                getCell(row, 5, formatter)
-                        );
 
                         student.setBatch(
-                                getCell(row, 6, formatter)
+                                getCell(row, "batch", columns, formatter)
+                        );
+
+                        student.setAcademicSession(
+                                getCell(row, "academicSession", columns, formatter)
                         );
 
                         student.setStudyBatch(
-                                getCell(row, 7, formatter)
+                                getCell(row, "studyBatch", columns, formatter)
                         );
 
                         // Normal String
                         student.setStudySubjects(
-                                getCell(row, 8, formatter)
+                                getCell(row, "studySubjects", columns, formatter)
                         );
 
                         student.setFatherName(
-                                getCell(row, 9, formatter)
+                                getCell(row, "fatherName", columns, formatter)
                         );
 
                         student.setFatherMobNo(
-                                getCell(row, 10, formatter)
+                                getCell(row, "fatherMobNo", columns, formatter)
                         );
 
                         student.setPassword(
-                                getCell(row, 11, formatter)
+                                getCell(row, "password", columns, formatter)
                         );
 
 
@@ -378,7 +840,7 @@ public class DomainAdminService {
                         result.addInvalid(
                                 file.getOriginalFilename(),
                                 rowNumber,
-                                getCell(row, 2, formatter),
+                                getCell(row, "email", columns, formatter),
                                 getErrorMessage(
                                         e,
                                         "Failed to save student"
@@ -430,13 +892,13 @@ public class DomainAdminService {
 
             try (
                     InputStream inputStream = file.getInputStream();
-                    Workbook workbook = new XSSFWorkbook(inputStream)
+                    Workbook workbook = WorkbookFactory.create(inputStream)
             ) {
 
                 Sheet sheet = workbook.getSheetAt(0);
                 DataFormatter formatter = new DataFormatter();
 
-                validateHeader(
+                Map<String, Integer> columns = validateHeader(
                         sheet.getRow(0),
                         new String[]{
                                 "facultyId",
@@ -444,7 +906,6 @@ public class DomainAdminService {
                                 "email",
                                 "mobileNumber",
                                 "course",
-                                "teachingAssignments",
                                 "password"
                         },
                         file.getOriginalFilename(),
@@ -472,41 +933,30 @@ public class DomainAdminService {
                                 new FacultySignupDTO();
 
                         faculty.setFacultyId(
-                                getCell(row, 0, formatter)
+                                getCell(row, "facultyId", columns, formatter)
                         );
 
                         faculty.setName(
-                                getCell(row, 1, formatter)
+                                getCell(row, "name", columns, formatter)
                         );
 
                         faculty.setEmail(
                                 normalizeEmail(
-                                        getCell(row, 2, formatter)
+                                        getCell(row, "email", columns, formatter)
                                 )
                         );
 
                         faculty.setMobileNumber(
-                                getCell(row, 3, formatter)
+                                getCell(row, "mobileNumber", columns, formatter)
                         );
 
                         faculty.setCourse(
-                                getCell(row, 4, formatter)
+                                getCell(row, "course", columns, formatter)
                         );
 
-
-                        /*
-                         * Keep as normal String.
-                         *
-                         * Example:
-                         *
-                         * 1A:JAVA,C,DSA;2A:AI,ML,OS
-                         */
-                        faculty.setTeachingAssignments(
-                                getCell(row, 5, formatter)
-                        );
 
                         faculty.setPassword(
-                                getCell(row, 6, formatter)
+                                getCell(row, "password", columns, formatter)
                         );
 
 
@@ -568,7 +1018,7 @@ public class DomainAdminService {
                         result.addInvalid(
                                 file.getOriginalFilename(),
                                 rowNumber,
-                                getCell(row, 2, formatter),
+                                getCell(row, "email", columns, formatter),
                                 getErrorMessage(
                                         e,
                                         "Failed to save faculty"
@@ -620,13 +1070,13 @@ public class DomainAdminService {
 
             try (
                     InputStream inputStream = file.getInputStream();
-                    Workbook workbook = new XSSFWorkbook(inputStream)
+                    Workbook workbook = WorkbookFactory.create(inputStream)
             ) {
 
                 Sheet sheet = workbook.getSheetAt(0);
                 DataFormatter formatter = new DataFormatter();
 
-                validateHeader(
+                Map<String, Integer> columns = validateHeader(
                         sheet.getRow(0),
                         new String[]{
                                 "subAdminId",
@@ -634,7 +1084,6 @@ public class DomainAdminService {
                                 "email",
                                 "mobileNumber",
                                 "course",
-                                "teachingAssignments",
                                 "password"
                         },
                         file.getOriginalFilename(),
@@ -662,35 +1111,30 @@ public class DomainAdminService {
                                 new SubAdminSignupDTO();
 
                         subAdmin.setSubAdminId(
-                                getCell(row, 0, formatter)
+                                getCell(row, "subAdminId", columns, formatter)
                         );
 
                         subAdmin.setName(
-                                getCell(row, 1, formatter)
+                                getCell(row, "name", columns, formatter)
                         );
 
                         subAdmin.setEmail(
                                 normalizeEmail(
-                                        getCell(row, 2, formatter)
+                                        getCell(row, "email", columns, formatter)
                                 )
                         );
 
                         subAdmin.setMobileNumber(
-                                getCell(row, 3, formatter)
+                                getCell(row, "mobileNumber", columns, formatter)
                         );
 
                         subAdmin.setCourse(
-                                getCell(row, 4, formatter)
+                                getCell(row, "course", columns, formatter)
                         );
 
-
-                        // Normal String
-                        subAdmin.setTeachingAssignments(
-                                getCell(row, 5, formatter)
-                        );
 
                         subAdmin.setPassword(
-                                getCell(row, 6, formatter)
+                                getCell(row, "password", columns, formatter)
                         );
 
 
@@ -752,7 +1196,7 @@ public class DomainAdminService {
                         result.addInvalid(
                                 file.getOriginalFilename(),
                                 rowNumber,
-                                getCell(row, 2, formatter),
+                                getCell(row, "email", columns, formatter),
                                 getErrorMessage(
                                         e,
                                         "Failed to save SubAdmin"
@@ -804,13 +1248,13 @@ public class DomainAdminService {
 
             try (
                     InputStream inputStream = file.getInputStream();
-                    Workbook workbook = new XSSFWorkbook(inputStream)
+                    Workbook workbook = WorkbookFactory.create(inputStream)
             ) {
 
                 Sheet sheet = workbook.getSheetAt(0);
                 DataFormatter formatter = new DataFormatter();
 
-                validateHeader(
+                Map<String, Integer> columns = validateHeader(
                         sheet.getRow(0),
                         new String[]{
                                 "feesAdminId",
@@ -844,25 +1288,25 @@ public class DomainAdminService {
                                 new FeesAdminSignupDTO();
 
                         feesAdmin.setFeesAdminId(
-                                getCell(row, 0, formatter)
+                                getCell(row, "feesAdminId", columns, formatter)
                         );
 
                         feesAdmin.setName(
-                                getCell(row, 1, formatter)
+                                getCell(row, "name", columns, formatter)
                         );
 
                         feesAdmin.setEmail(
                                 normalizeEmail(
-                                        getCell(row, 2, formatter)
+                                        getCell(row, "email", columns, formatter)
                                 )
                         );
 
                         feesAdmin.setMobileNumber(
-                                getCell(row, 3, formatter)
+                                getCell(row, "mobileNumber", columns, formatter)
                         );
 
                         feesAdmin.setPassword(
-                                getCell(row, 4, formatter)
+                                getCell(row, "password", columns, formatter)
                         );
 
 
@@ -924,7 +1368,7 @@ public class DomainAdminService {
                         result.addInvalid(
                                 file.getOriginalFilename(),
                                 rowNumber,
-                                getCell(row, 2, formatter),
+                                getCell(row, "email", columns, formatter),
                                 getErrorMessage(
                                         e,
                                         "Failed to save FeesAdmin"
@@ -975,11 +1419,12 @@ public class DomainAdminService {
         if (isBlank(student.getCourse()))
             return "Course is required";
 
-        if (isBlank(student.getBranch()))
-            return "Branch is required";
 
         if (isBlank(student.getBatch()))
             return "Batch is required";
+
+        if (isBlank(student.getAcademicSession()))
+            return "Academic session is required";
 
         if (isBlank(student.getStudyBatch()))
             return "Study batch is required";
@@ -1023,15 +1468,6 @@ public class DomainAdminService {
         if (isBlank(faculty.getCourse()))
             return "Course is required";
 
-        if (isBlank(faculty.getTeachingAssignments()))
-            return "Teaching assignments are required";
-
-        if (!isValidTeachingAssignments(
-                faculty.getTeachingAssignments()
-        )) {
-            return "Invalid teaching assignments. Example: 1A:JAVA,C,DSA;2A:AI,ML,OS";
-        }
-
         if (isBlank(faculty.getPassword()))
             return "Password is required";
 
@@ -1061,15 +1497,6 @@ public class DomainAdminService {
 
         if (isBlank(subAdmin.getCourse()))
             return "Course is required";
-
-        if (isBlank(subAdmin.getTeachingAssignments()))
-            return "Teaching assignments are required";
-
-        if (!isValidTeachingAssignments(
-                subAdmin.getTeachingAssignments()
-        )) {
-            return "Invalid teaching assignments. Example: 1A:JAVA,C,DSA;2A:AI,ML,OS";
-        }
 
         if (isBlank(subAdmin.getPassword()))
             return "Password is required";
@@ -1105,59 +1532,6 @@ public class DomainAdminService {
     }
 
 
-    // ============================================================
-    // TEACHING ASSIGNMENT VALIDATION
-    // ============================================================
-
-    private boolean isValidTeachingAssignments(
-            String value
-    ) {
-
-        if (isBlank(value)) {
-            return false;
-        }
-
-        String[] batches = value.split(";");
-
-        for (String batchData : batches) {
-
-            batchData = batchData.trim();
-
-            if (batchData.isEmpty()) {
-                continue;
-            }
-
-            String[] parts = batchData.split(":", 2);
-
-            if (parts.length != 2) {
-                return false;
-            }
-
-            String batch = parts[0].trim();
-            String subjects = parts[1].trim();
-
-            if (batch.isEmpty() || subjects.isEmpty()) {
-                return false;
-            }
-
-            String[] subjectList = subjects.split(",");
-
-            boolean hasSubject = false;
-
-            for (String subject : subjectList) {
-
-                if (!subject.trim().isEmpty()) {
-                    hasSubject = true;
-                }
-            }
-
-            if (!hasSubject) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
 
     // ============================================================
@@ -1202,7 +1576,7 @@ public class DomainAdminService {
     }
 
 
-    private void validateHeader(
+    private Map<String, Integer> validateHeader(
             Row header,
             String[] expectedHeaders,
             String fileName,
@@ -1216,23 +1590,45 @@ public class DomainAdminService {
             );
         }
 
-        for (int i = 0; i < expectedHeaders.length; i++) {
-
-            String actual =
-                    getCell(header, i, formatter);
-
-            if (!expectedHeaders[i].equalsIgnoreCase(actual)) {
-
+        Map<String, Integer> columns = new HashMap<>();
+        for (int i = 0; i < header.getLastCellNum(); i++) {
+            String name = normalizeHeader(getCell(header, i, formatter));
+            if (name.isEmpty()) {
+                continue;
+            }
+            if (columns.putIfAbsent(name, i) != null) {
                 throw new IllegalArgumentException(
-                        "Invalid header in "
-                                + fileName
-                                + ". Column "
-                                + (i + 1)
-                                + " should be "
-                                + expectedHeaders[i]
+                        "Duplicate column '" + name + "' in " + fileName
                 );
             }
         }
+
+        for (String expectedHeader : expectedHeaders) {
+            if (!columns.containsKey(normalizeHeader(expectedHeader))) {
+                throw new IllegalArgumentException(
+                        "Missing required column '"
+                                + expectedHeader
+                                + "' in "
+                                + fileName
+                );
+            }
+        }
+
+        return columns;
+    }
+
+    private String normalizeHeader(String header) {
+        return header.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String getCell(
+            Row row,
+            String column,
+            Map<String, Integer> columns,
+            DataFormatter formatter
+    ) {
+        Integer index = columns.get(normalizeHeader(column));
+        return index == null ? "" : getCell(row, index, formatter);
     }
 
 
@@ -1244,11 +1640,12 @@ public class DomainAdminService {
 
         if (
                 name == null ||
-                        !name.toLowerCase(Locale.ROOT).endsWith(".xlsx")
+                        !(name.toLowerCase(Locale.ROOT).endsWith(".xlsx")
+                                || name.toLowerCase(Locale.ROOT).endsWith(".xls"))
         ) {
 
             throw new IllegalArgumentException(
-                    "Only .xlsx files are supported"
+                    "Only .xlsx and .xls files are supported"
             );
         }
     }
@@ -1327,34 +1724,11 @@ public class DomainAdminService {
         return e.getMessage();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    public long getCourseCount(String domain) {
+        University university = universityService.getUniversityByDomain(domain);
+        return  feesCourseWiseRepository.countByUniversity(university);
+    }
+    
 
 //////read Excel files (.xlsx)
 ////    public void uploadStudentsFromExcel(String domain, MultipartFile file) throws Exception {

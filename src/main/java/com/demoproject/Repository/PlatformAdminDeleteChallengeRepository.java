@@ -1,0 +1,20 @@
+package com.demoproject.Repository;
+
+import com.demoproject.Entity.PlatformAdminDeleteChallenge;
+import jakarta.persistence.LockModeType;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+
+public interface PlatformAdminDeleteChallengeRepository extends JpaRepository<PlatformAdminDeleteChallenge, Long> {
+
+    void deleteByAdminEmailAndConsumedAtIsNull(String adminEmail);
+
+    Optional<PlatformAdminDeleteChallenge> findTopByAdminEmailAndConsumedAtIsNullOrderByCreatedAtDesc(
+            String adminEmail);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<PlatformAdminDeleteChallenge>
+    findTopByAdminEmailAndUniversityIdAndUniversityDomainAndReasonAndConsumedAtIsNullOrderByCreatedAtDesc(
+            String adminEmail, Long universityId, String universityDomain, String reason);
+}

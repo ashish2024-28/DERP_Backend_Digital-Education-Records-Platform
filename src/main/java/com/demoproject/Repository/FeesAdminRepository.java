@@ -24,6 +24,7 @@ public interface FeesAdminRepository extends JpaRepository<FeesAdmin, Long> {
     FeesAdmin findByFeesAdminIdAndDomain(String subAdminId, String domain);
 
     Optional<FeesAdmin> findByEmailAndDomain(String email, String domain);
+    Optional<FeesAdmin> findByEmailIgnoreCaseAndDomainIgnoreCase(String email, String domain);
 
     FeesAdmin findByDomainAndEmail(String domain, String email);
 
@@ -45,4 +46,3 @@ public interface FeesAdminRepository extends JpaRepository<FeesAdmin, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 }
-

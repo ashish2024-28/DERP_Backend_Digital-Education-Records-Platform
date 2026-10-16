@@ -140,7 +140,7 @@ FR-30 SubAdmin can manage .
 
 This deserves its own requirements because it is one of your major real-world problems.
 
-FR-31 System stores attendance against a specific studentId, facultyId, subAdminId, StudentRollNo, subject, section(YearSection->3C), dateTime, period .
+FR-31 System stores attendance against a specific studentId, facultyId, subAdminId, StudentRollNumber, subject, section(YearSection->3C), dateTime, period .
 
 FR-32 System identifies whether attendance has already been submitted for a particular session.
 

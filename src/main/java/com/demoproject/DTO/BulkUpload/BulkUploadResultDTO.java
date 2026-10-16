@@ -1,6 +1,5 @@
 package com.demoproject.DTO.BulkUpload;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

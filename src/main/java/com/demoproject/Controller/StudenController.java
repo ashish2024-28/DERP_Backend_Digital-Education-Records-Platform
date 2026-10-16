@@ -1,6 +1,7 @@
 package com.demoproject.Controller;
 
 import com.demoproject.DTO.ApiResponse;
+import com.demoproject.DTO.StudentDTO.StudentResponseWithProfileDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class StudenController {
 
 
     @GetMapping
-    public ResponseEntity<?> getStudent(@PathVariable String domain) {
+    public ResponseEntity<StudentResponseWithProfileDTO> getStudent(@PathVariable String domain) {
         // 1st option 
         // UsersPrinciple user =
         //     (UsersPrinciple) SecurityContextHolder
@@ -114,7 +115,7 @@ public class StudenController {
 
     // DELETE Account
     @DeleteMapping("/delete_account")
-    public ResponseEntity<?> deleteByRollNO(@PathVariable String domain,
+    public ResponseEntity<?> deleteByEmail(@PathVariable String domain,
         Authentication authentication) {
         try {
             String email = authentication.getName();

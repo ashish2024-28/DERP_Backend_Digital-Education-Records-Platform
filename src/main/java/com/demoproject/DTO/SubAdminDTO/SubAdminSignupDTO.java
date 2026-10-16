@@ -20,16 +20,5 @@ public class SubAdminSignupDTO {
 
     private String course;
 
-    /*
-     * Example:
-     *
-     * {
-     *   "2A": ["JAVA", "DSA"],
-     *   "2B": ["OS"],
-     *   "3A": ["DBMS"]
-     * }
-     */
-    private String  teachingAssignments;
-
     private String password;
 }

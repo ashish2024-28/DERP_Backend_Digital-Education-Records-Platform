@@ -27,21 +27,10 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     );
 
     // Email + domain
-    Optional<Student> findByEmailAndDomain(
-            String email,
-            String domain
-    );
+    Optional<Student> findByEmailAndDomain(String email, String domain);
 
-    Student findByDomainAndEmail(
-            String domain,
-            String email
-    );
+    Student findByDomainAndEmail(String domain, String email);
 
-    // Email + password
-    Student findByEmailAndPassword(
-            String email,
-            String password
-    );
 
     // Name + domain
     List<Student> findAllByNameAndDomain(
@@ -49,11 +38,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             String domain
     );
 
-    // Branch + domain
-    List<Student> findAllByBranchAndDomain(
-            String branch,
-            String domain
-    );
 
     // Course + domain
     List<Student> findAllByCourseAndDomain(
@@ -135,4 +119,5 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findByDomainIgnoreCaseOrderByCourseAscStudyBatchAscRollNumberAsc(
             String domain);
 
+    Optional  <Student> findByEmailAndDomainAndRollNumber(String emil, String domain , String rollNumber);
 }

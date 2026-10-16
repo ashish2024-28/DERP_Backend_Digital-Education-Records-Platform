@@ -8,31 +8,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "erp_attendance_aggregate",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_attendance_aggregate_student_subject",
-                columnNames = {
-                        "student_id",
-                        "subject"
-                }
-        ),
-        indexes = {
-                @Index(
-                        name = "idx_attendance_aggregate_domain_student",
-                        columnList = "domain,student_id"
-                )
-        }
-)
+@Table
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttendanceAggregate {
+public class StudentTotalAttendanceSubjectWise {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
 
     @Column(nullable = false)
     private String domain;

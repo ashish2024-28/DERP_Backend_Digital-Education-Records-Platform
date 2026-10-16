@@ -8,9 +8,9 @@ public record AttendanceStudentResponse(
 
         String fatherName,
 
-        String studyBatch,
+        String studyBatch
 
-        String branch
+
 
 ) {
 }

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
+import com.demoproject.Entity.FeesAccounts.FeesCourseWise;
 import com.demoproject.annotation.LowerCase;
 import com.demoproject.annotation.TitleCase;
 import com.demoproject.annotation.UpperCase;
@@ -108,6 +109,11 @@ public class University {
     // @JsonManagedReference
     private DomainAdmin domainAdmin;
 
+    //  University ↔ FeesAdmin (One-To-Many)
+    @OneToMany(mappedBy = "university", cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
+    // @JsonManagedReference
+    private List<FeesAdmin> feesAdmin;
+
     // 2️⃣ University ↔ SubAdmin (One-To-Many)
     @OneToMany(mappedBy = "university", cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     // @JsonManagedReference
@@ -116,12 +122,21 @@ public class University {
     // 3️⃣ University ↔ Faculty (One-To-Many)
     @OneToMany(mappedBy = "university", cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     // @JsonManagedReference
-    private List<Faculty> facultyList;
+    private List<Faculty> faculty;
 
     // 4️⃣ University ↔ Student (One-To-Many)
     @OneToMany(mappedBy = "university", cascade = {CascadeType.ALL, CascadeType.MERGE}, fetch = FetchType.LAZY)
     // @JsonManagedReference
     private List<Student> students;
+
+
+//    Cources
+
+    // 1️⃣  University ↔ FeesCourseWise (One-To-Many)
+    @OneToMany(mappedBy = "university", cascade = {CascadeType.ALL, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    // @JsonManagedReference
+    private List<FeesCourseWise> feesCourseWises;
+
 
 }
 // Student                  <- also for faculty, Subadmin and domainAdmin 

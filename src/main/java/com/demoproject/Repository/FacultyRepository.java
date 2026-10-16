@@ -58,6 +58,11 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
             String domain
     );
 
+    Optional<Faculty> findByEmailIgnoreCaseAndDomainIgnoreCase(
+            String email,
+            String domain
+    );
+
 
     // ---------------------------------------------------------
     // Login
@@ -90,16 +95,16 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     // PostgreSQL JSONB:
     // jsonb_exists(teaching_assignments, :batch)
     // ---------------------------------------------------------
-    @Query(value = """
-        SELECT *
-        FROM faculty
-        WHERE domain = :domain
-          AND jsonb_exists(teaching_assignments, :batch)
-        """, nativeQuery = true)
-    List<Faculty> findByTeachingBatchAndDomain(
-            @Param("batch") String batch,
-            @Param("domain") String domain
-    );
+//    @Query(value = """
+//        SELECT *
+//        FROM faculty
+//        WHERE domain = :domain
+//          AND jsonb_exists(teaching_assignments, :batch)
+//        """, nativeQuery = true)
+//    List<Faculty> findByTeachingBatchAndDomain(
+//            @Param("batch") String batch,
+//            @Param("domain") String domain
+//    );
 
 
     // ---------------------------------------------------------

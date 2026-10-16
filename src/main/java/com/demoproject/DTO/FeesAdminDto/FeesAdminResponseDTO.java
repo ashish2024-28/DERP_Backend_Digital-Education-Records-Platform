@@ -22,6 +22,8 @@ public class FeesAdminResponseDTO {
 
     private String profilePic;// store image path OR base64
 
+    private String role;
+
 
     private String feesAdminId;
 

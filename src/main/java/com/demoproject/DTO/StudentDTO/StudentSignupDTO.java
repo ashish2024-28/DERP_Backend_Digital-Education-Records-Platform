@@ -1,5 +1,6 @@
 package com.demoproject.DTO.StudentDTO;
 
+import jakarta.persistence.Column;
 import lombok.*;
 
 import java.util.List;
@@ -19,10 +20,9 @@ public class StudentSignupDTO {
 
     private String course;
 
-    private String branch;
-
     private String batch;
 
+    private String academicSession ;
     /*
      * batch and section.
      *

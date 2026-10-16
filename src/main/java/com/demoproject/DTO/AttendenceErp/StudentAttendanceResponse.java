@@ -11,8 +11,6 @@ public record StudentAttendanceResponse(
 
         String course,
 
-        String branch,
-
         String batch,
 
         String studyBatch,

@@ -8,7 +8,7 @@ public record AttendanceRetentionUpdateRequest(
 
         @NotNull
         @Min(1)
-        @Max(60)
+        @Max(120)
         Integer retentionMonths,
 
         @NotNull

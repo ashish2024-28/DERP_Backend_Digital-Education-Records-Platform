@@ -21,7 +21,6 @@ uniqueConstraints = {
 @AllArgsConstructor
 @Getter
 @Setter
-@EntityListeners(StringNormalizationListener.class)
 public class DomainAdmin extends BaseUser {
 
 
@@ -31,6 +30,7 @@ public class DomainAdmin extends BaseUser {
     @JsonIgnore
     private University university;
   
+
 
     
 

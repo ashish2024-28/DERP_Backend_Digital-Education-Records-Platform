@@ -16,10 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.demoproject.Entity.Role;
 import com.demoproject.Entity.University;
 import com.demoproject.DTO.University.UniversityNameDomainLogoPathDTO;
+import com.demoproject.DTO.AdminUniversityResponseDTO;
 import com.demoproject.Entity.DomainAdmin;
 
 import jakarta.transaction.Transactional;
@@ -108,6 +111,7 @@ public class UniversityService {
         domainAdmin.setUniversity(university);
         domainAdmin.setRole(Role.DOMAIN_ADMIN);
         domainAdmin.setDomain(university.getDomain());
+
         university.setDomainAdmin(domainAdmin);
 
         University saved = universityRepo.save(university);
@@ -222,6 +226,36 @@ public class UniversityService {
 
 
     // **** these all are for official use only no others  *****
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<AdminUniversityResponseDTO> getAllForPlatformAdmin() {
+        return universityRepo.findAll().stream().map(this::toAdminResponse).toList();
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public AdminUniversityResponseDTO getForPlatformAdminById(Long id) {
+        University university = universityRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "University not found"));
+        return toAdminResponse(university);
+    }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public AdminUniversityResponseDTO getForPlatformAdminByDomain(String domain) {
+        University university = universityRepo.findByDomain(domain)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "University not found"));
+        return toAdminResponse(university);
+    }
+
+    private AdminUniversityResponseDTO toAdminResponse(University university) {
+        AdminUniversityResponseDTO response = modelMapper.map(university, AdminUniversityResponseDTO.class);
+        DomainAdmin domainAdmin = university.getDomainAdmin();
+        if (domainAdmin != null) {
+            response.setDomainAdminName(domainAdmin.getName());
+            response.setDomainAdminEmail(domainAdmin.getEmail());
+            response.setDomainAdminMobileNumber(domainAdmin.getMobileNumber());
+        }
+        return response;
+    }
+
     // READ ALL
     public List<University> getAll(){
         return universityRepo.findAll();
@@ -233,14 +267,22 @@ public class UniversityService {
     }
 
     // Get By Domain   This will match /hu, /dtu, /aku etc.
-    public University getByDomain(String domain) {
-        return universityRepo.findByDomain(domain).orElse(null);
+    public University getUniversityByDomain(String domain) {
+        return universityRepo.findByDomain(domain).
+                orElseThrow(() ->new RuntimeException( "University not found" ) );
+
     }
     
     // UPDATE id and domain
+    @org.springframework.transaction.annotation.Transactional
     public University updateUniversity(String domain, Long id,University univ){
-        University old = universityRepo.findByDomainAndId(domain,id).orElse(null);
-        old.setUniversityName(univ.getUniversityName());
+        if (univ.getUniversityName() == null || univ.getUniversityName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "University name is required");
+        }
+        University old = universityRepo.findByDomainAndId(domain,id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "University not found for the supplied domain and ID"));
+        old.setUniversityName(univ.getUniversityName().trim());
         return universityRepo.save(old);
     }
     

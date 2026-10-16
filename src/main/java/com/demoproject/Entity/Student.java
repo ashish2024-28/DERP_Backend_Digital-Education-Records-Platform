@@ -1,5 +1,9 @@
 package com.demoproject.Entity;
 
+import com.demoproject.Entity.AttendenceErp.StudentAttendanceRecordDayWise;
+import com.demoproject.Entity.AttendenceErp.StudentTotalAttendanceSubjectWise;
+import com.demoproject.Entity.FeesAccounts.StudentFeesAccount;
+import com.demoproject.Entity.FeesAccounts.StudentFeesPayment;
 import com.demoproject.Entity.ProfileInformation.StudentInfo.Certifications;
 import com.demoproject.annotation.TitleCase;
 import com.demoproject.annotation.UpperCase;
@@ -13,9 +17,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +29,6 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-@EntityListeners(StringNormalizationListener.class)
 public class Student extends BaseUser {
 
     /*
@@ -44,28 +44,13 @@ public class Student extends BaseUser {
 
 
     /*
-     * Course.
-     *
-     * Examples:
-     * B.Tech
-     * BCA
-     * B.Pharma
-     */
+     * Course + Branch.
+
+     * Examples: B.Tech CSE, B.TECH CSE AI , B.TECH CSE DS , BCA, B.Pharma
+      */
     @Column(nullable = false)
     @UpperCase
     private String course;
-
-
-    /*
-     * Branch.
-     *
-     * Examples:
-     * CSE
-     * ECE
-     * Mechanical
-     */
-    @UpperCase
-    private String branch;
 
 
     /*
@@ -78,6 +63,15 @@ public class Student extends BaseUser {
     @Column(nullable = false)
     private String batch;
 
+    /*
+     * Admission / academic session.
+     *
+     * Examples:
+     * 2024-25
+     * 2025-26
+     */
+    @Column(nullable=false)
+    private String academicSession;
 
     /*
      * Current study batch / section.
@@ -91,6 +85,7 @@ public class Student extends BaseUser {
     @Column(nullable = false, length = 20)
     @UpperCase
     private String studyBatch;
+
 
 
     /*
@@ -138,15 +133,6 @@ public class Student extends BaseUser {
 
 
     /*
-     * University / college.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "university_id")
-    @JsonIgnore
-    private University university;
-
-
-    /*
      * Student Certifications.
      */
     @OneToMany(
@@ -156,8 +142,36 @@ public class Student extends BaseUser {
     )
     private List<Certifications> certifications = new ArrayList<>();
 
+    /*
+     * Student FeesAccount.
+     */
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<StudentFeesPayment> feesPayments = new ArrayList<>();
+
+    @OneToOne(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private StudentFeesAccount feesAccount ;
 
 
+    /*
+     * Student Attendance.
+     */
+
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<StudentAttendanceRecordDayWise>  studentAttendanceRecordDayWises= new ArrayList<>();
+
+    @OneToMany(mappedBy = "student",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<StudentTotalAttendanceSubjectWise> studentTotalAttendanceSubjectWise;
+
+
+
+
+    /*
+     * University / college.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "university_id")
+    @JsonIgnore
+    private University university;
 
 
 

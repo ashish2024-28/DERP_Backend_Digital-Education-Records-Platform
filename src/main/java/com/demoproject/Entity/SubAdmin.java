@@ -31,7 +31,6 @@ import java.util.Map;
 @NoArgsConstructor
 @Getter
 @Setter
-@EntityListeners(StringNormalizationListener.class)
 public class SubAdmin extends BaseUser {
 
     /*
@@ -56,24 +55,6 @@ public class SubAdmin extends BaseUser {
     @UpperCase
     private String course;
 
-    /*
-     * Multiple batches with multiple subjects.
-     *
-     * Example JSON:
-     *
-     * {
-     *   "1A": ["JAVA", "C", "DSA"],
-     *   "2A": ["AI", "ML", "OS"],
-     *   "2C": ["OS", "AI"],
-     *   "3A": ["MATH"]
-     * }
-     */
-    @Column(
-            name = "teaching_assignments",
-            nullable = false
-    )
-    @UpperCase
-    private String teachingAssignments;
 
     /*
      * University assigned to this SubAdmin.

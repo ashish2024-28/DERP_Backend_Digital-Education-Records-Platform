@@ -7,8 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.demoproject.DTO.StudentDTO.StudentResponseWithProfileDTO;
 import com.demoproject.Entity.*;
 import jakarta.validation.constraints.NotNull;
 import org.modelmapper.ModelMapper;
@@ -24,6 +26,7 @@ import com.demoproject.DTO.SubAdminDTO.SubAdminResponseDTO;
 import com.demoproject.DTO.SubAdminDTO.SubAdminSignupDTO;
 import com.demoproject.Repository.SubAdminRepository;
 import com.demoproject.Repository.UniversityRepo;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 
@@ -169,8 +172,6 @@ public class SubAdminService {
         if (newData.getCourse() != null)
             old.setCourse(newData.getCourse());
 
-        if (newData.getTeachingAssignments() != null)
-            old.setTeachingAssignments(newData.getTeachingAssignments());
 
         if (newData.getMobileNumber() != null)
             old.setMobileNumber(newData.getMobileNumber());
@@ -212,6 +213,61 @@ public class SubAdminService {
     }
 
 
+    // Get subAdmin with profile
+    @Transactional(readOnly = true)
+    public SubAdminResponseDTO getSubAdminWithProfile(String domain , String email , Set<String> roles) {
+        SubAdmin subAdmin = SArepo.findByEmailIgnoreCaseAndDomainIgnoreCase(email, domain)
+                .orElseThrow(() -> new IllegalArgumentException("Sub Admin profile not found."));
+
+        SubAdminResponseDTO subAdminResponseDTO = modelMapper.map(subAdmin, SubAdminResponseDTO.class);
+
+        // DOMAIN_ADMIN -> everything
+        if (roles.contains("ROLE_DOMAIN_ADMIN")) {
+            return subAdminResponseDTO;
+        }
+
+        // FEES_ADMIN -> only fees related fields
+        if (roles.contains("ROLE_FEES_ADMIN")) {
+
+
+            // Certificate hide
+//            student.setCertifications(null);
+
+            // Attendance hide
+//            student.setStudentAttendanceRecordDayWises(null);
+//            student.setStudentTotalAttendanceSubjectWise(null);
+
+            // Fees remain available
+            // student.getFeesPayments()
+            // student.getFeesAccount()
+
+            return subAdminResponseDTO;
+        }
+
+        // FACULTY / SUB_ADMIN -> fees fields hide
+        if (roles.contains("ROLE_FACULTY")
+                || roles.contains("ROLE_SUB_ADMIN")) {
+
+
+//            // Fees hide
+//            student.setFeesPayments(null);
+//            student.setFeesAccount(null);
+
+            return subAdminResponseDTO;
+        }
+//
+//        // Any other role -> hide sensitive fields
+//
+//        student.setCertifications(null);
+//
+//        student.setFeesPayments(null);
+//        student.setFeesAccount(null);
+//
+//        student.setStudentAttendanceRecordDayWises(null);
+//        student.setStudentTotalAttendanceSubjectWise(null);
+
+        return subAdminResponseDTO;
+    }
+
 
 }
-
