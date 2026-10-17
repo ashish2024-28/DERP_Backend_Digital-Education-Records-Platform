@@ -60,7 +60,7 @@ public class StudentAccountFeesService {
     }
 
 //  Student Fees Account
-    @Transactional(readOnly = true)
+    @Transactional
     public StudentFeesAccountDTO studentFeesAccount(String domain , String email){
 
         Student student = studentRepository.findByEmailAndDomain(email , domain)
